@@ -2,4 +2,17 @@
   <div class="eyebrow" data-i18n="eyebrow">Keimirror</div>
   <h1 id="page-title" data-i18n="heroTitle">Keiverse Public Mirror</h1>
   <p class="lead" data-i18n="heroLead">A fast public mirror for open-source software repositories, operated by Keiverse from South Korea.</p>
+  <aside class="hero-mirror-panel" aria-live="polite" aria-labelledby="hero-mirror-title">
+    <div class="hero-mirror-placeholder" data-mirror-placeholder>MIRROR REPORT // HTTP HTTPS RSYNC // KR-NET</div>
+    <div class="hero-mirror-list" data-mirror-list hidden>
+      <div class="hero-mirror-list-header">
+        <div>
+          <p class="eyebrow" data-i18n="mirrorListEyebrow">Directory list</p>
+          <h2 id="hero-mirror-title" data-mirror-title data-i18n="mirrorListTitle">Select a mirror</h2>
+        </div>
+        <a class="button" data-mirror-open href="https://mirror.keiminem.com/" target="_blank" rel="noopener" data-i18n="mirrorListOpenNew">Open in new tab</a>
+      </div>
+      <iframe class="hero-mirror-frame" data-mirror-frame title="Mirror directory list" loading="lazy"></iframe>
+    </div>
+  </aside>
 </section>
