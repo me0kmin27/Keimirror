@@ -6,6 +6,7 @@ on:
 jobs:
   test-ssh:
     runs-on: ubuntu-latest
+    environment: keimirror
 
     steps:
       - name: Prepare SSH key
