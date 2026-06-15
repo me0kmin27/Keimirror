@@ -67,8 +67,11 @@ function showMirrorList(mirrorId) {
 
   if (!mirrorList || !mirrorFrame || !mirrorOpen) return;
 
+  const hero = mirrorList.closest('.hero');
+
   if (placeholder) placeholder.hidden = true;
   mirrorList.hidden = false;
+  hero?.classList.add('is-showing-mirror-list');
   mirrorList.dataset.activeMirror = mirrorId;
   mirrorFrame.src = mirror.url;
   mirrorOpen.href = mirror.url;
