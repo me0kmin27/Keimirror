@@ -41,14 +41,63 @@
       color: inherit;
     }
 
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 16, 32, 0.78);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      width: min(1180px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 0.9rem 0;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      display: grid;
+      width: 2.35rem;
+      height: 2.35rem;
+      place-items: center;
+      border-radius: 0.8rem;
+      background: linear-gradient(135deg, var(--accent-strong), var(--accent-warm));
+      color: #06121b;
+      box-shadow: 0 0.75rem 1.7rem rgba(34, 211, 238, 0.22);
+    }
+
+    .nav-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.6rem;
+    }
+
     main {
       width: min(1180px, calc(100% - 2rem));
       margin: 0 auto;
-      padding: 4.5rem 0;
+      padding: 3.5rem 0 4.5rem;
     }
 
     .hero {
       margin-bottom: 2rem;
+      text-align: center;
     }
 
     .eyebrow {
@@ -74,7 +123,7 @@
 
     .lead {
       max-width: 820px;
-      margin-bottom: 0;
+      margin: 0 auto;
       color: var(--muted);
       font-size: clamp(1.05rem, 2vw, 1.35rem);
     }
@@ -123,27 +172,48 @@
       margin-bottom: 0;
     }
 
-    .section-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1rem;
-    }
-
-    .mini-card {
+    .info-table {
+      width: 100%;
+      margin-top: 1rem;
+      border-collapse: collapse;
+      overflow: hidden;
       border: 1px solid var(--border);
       border-radius: 1rem;
-      background: var(--panel-soft);
-      padding: 1rem;
+      background: rgba(15, 23, 42, 0.62);
     }
 
-    .mini-card h3 {
-      margin-bottom: 0.35rem;
-      font-size: 1.05rem;
+    .info-table th,
+    .info-table td {
+      padding: 0.85rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
     }
 
-    .mini-card p {
-      margin-bottom: 0;
-      font-size: 0.96rem;
+    .info-table tr:last-child th,
+    .info-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .info-table th {
+      width: 8.5rem;
+      color: var(--accent-warm);
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .visitor-ip {
+      display: inline-flex;
+      max-width: 100%;
+      margin-top: 0.35rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 0.8rem;
+      background: var(--panel-strong);
+      color: var(--accent);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 1rem;
+      word-break: break-all;
     }
 
     .info-list {
@@ -234,61 +304,93 @@
     }
 
     @media (max-width: 900px) {
+      .topbar-inner {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .nav-actions {
+        justify-content: flex-start;
+      }
+
       main {
         padding: 3rem 0;
       }
 
-      .layout,
-      .section-grid {
+      .layout {
         grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
+  <header class="topbar" aria-label="상단 메뉴">
+    <div class="topbar-inner">
+      <a class="logo" href="/" aria-label="Keimirror 홈">
+        <span class="logo-mark">K</span>
+        <span>Keimirror</span>
+      </a>
+      <nav class="nav-actions" aria-label="다른 메뉴로 이동">
+        <a class="button secondary" href="https://mirror.keiminem.com/">Mirror 1</a>
+        <a class="button secondary" href="https://mirror2.keiminem.com/">Mirror 2</a>
+        <a class="button secondary" href="https://keiverse.com/">Keiverse</a>
+      </nav>
+    </div>
+  </header>
+
   <main>
     <section class="hero" aria-labelledby="page-title">
       <div class="eyebrow">Keimirror</div>
-      <h1 id="page-title">Keiminem 미러 서비스</h1>
-      <p class="lead">Keimirror는 웹과 rsync 접속 정보를 한 곳에서 확인할 수 있도록 구성한 미러 안내 허브입니다. 왼쪽에는 서비스 소개와 운영 안내를, 오른쪽에는 바로 사용할 수 있는 서버 접속 정보를 정리했습니다.</p>
+      <h1 id="page-title">Keimirror</h1>
+      <p class="lead">Keiverse 공개미러</p>
     </section>
 
     <div class="layout">
-      <div class="column" aria-label="서버 소개 및 운영 안내">
-        <section class="card featured" aria-labelledby="intro-title">
-          <h2 id="intro-title">서버 소개</h2>
-          <p>Keiminem 미러는 패키지, 릴리스, 오픈소스 프로젝트 파일 등을 빠르게 내려받을 수 있도록 운영되는 공개 미러 서비스입니다. 방문자는 웹 브라우저에서 디렉터리 목록을 확인하거나, 자동화된 동기화 작업에는 rsync 엔드포인트를 사용할 수 있습니다.</p>
-          <p>각 미러 서버는 동일한 목적의 파일 목록을 제공하며, 사용자는 네트워크 상황이나 접근 방식에 맞춰 기본 미러와 보조 미러 중 하나를 선택할 수 있습니다.</p>
+      <div class="column" aria-label="Keimirror 안내">
+        <section class="card featured" aria-labelledby="welcome-title">
+          <h2 id="welcome-title">환영합니다</h2>
+          <p>Keimirror는 Keiverse에서 운영하는 공개 미러 안내 페이지입니다. 자주 사용하는 웹 미러와 rsync 주소를 한 곳에서 확인하고 필요한 저장소로 빠르게 이동할 수 있습니다.</p>
           <div class="actions">
             <a class="button" href="https://mirror.keiminem.com/">기본 미러 열기</a>
             <a class="button secondary" href="https://mirror2.keiminem.com/">보조 미러 열기</a>
           </div>
         </section>
 
-        <section class="card" aria-labelledby="details-title">
-          <h2 id="details-title">운영 및 이용 안내</h2>
-          <div class="section-grid">
-            <article class="mini-card">
-              <h3>웹 접근</h3>
-              <p>HTTP와 HTTPS 주소를 통해 fancyindex 기반 디렉터리 목록을 확인하고 필요한 파일을 직접 받을 수 있습니다.</p>
-            </article>
-            <article class="mini-card">
-              <h3>rsync 동기화</h3>
-              <p>대량 파일 동기화나 자동화 스크립트에는 rsync 전용 주소를 사용하는 것을 권장합니다.</p>
-            </article>
-            <article class="mini-card">
-              <h3>이중 미러</h3>
-              <p>기본 미러와 보조 미러를 분리해 운영하므로 상황에 따라 접속 가능한 서버를 선택할 수 있습니다.</p>
-            </article>
-            <article class="mini-card">
-              <h3>상태 확인</h3>
-              <p>파일 목록과 최신 동기화 상태는 각 미러 서버의 디렉터리 페이지에서 확인해 주세요.</p>
-            </article>
-          </div>
+        <section class="card" aria-labelledby="disclaimer-title">
+          <h2 id="disclaimer-title">면책조항</h2>
+          <p>본 공개 미러는 편의를 위해 제공되며, 각 프로젝트의 공식 배포처를 대체하지 않습니다. 파일의 무결성, 최신성, 사용 가능 여부는 원본 프로젝트의 안내와 체크섬을 함께 확인해 주세요.</p>
+          <p>서비스 점검, 동기화 지연, 네트워크 상황에 따라 일부 파일 접근이 일시적으로 제한될 수 있습니다.</p>
+        </section>
+
+        <section class="card" aria-labelledby="left-server-title">
+          <h2 id="left-server-title">서버 정보</h2>
+          <p>주요 접속 방식을 표로 정리했습니다.</p>
+          <table class="info-table">
+            <tbody>
+              <tr>
+                <th scope="row">HTTP</th>
+                <td><span class="domain">http://mirror.keiminem.com/</span><br><span class="domain">http://mirror2.keiminem.com/</span></td>
+              </tr>
+              <tr>
+                <th scope="row">HTTPS</th>
+                <td><span class="domain">https://mirror.keiminem.com/</span><br><span class="domain">https://mirror2.keiminem.com/</span></td>
+              </tr>
+              <tr>
+                <th scope="row">RSYNC</th>
+                <td><span class="domain">rsync://rsync.keiminem.com/</span><br><span class="domain">rsync://rsync2.keiminem.com/</span></td>
+              </tr>
+            </tbody>
+          </table>
         </section>
       </div>
 
-      <aside class="column" aria-label="서버 접속 정보">
+      <aside class="column" aria-label="접속 및 서버 정보">
+        <section class="card" aria-labelledby="visitor-ip-title">
+          <h2 id="visitor-ip-title">접속자 IP</h2>
+          <p>현재 접속 중인 클라이언트 IP입니다.</p>
+          <span class="visitor-ip" id="visitor-ip">확인 중...</span>
+        </section>
+
         <section class="card" aria-labelledby="server-info-title">
           <h2 id="server-info-title">서버 정보</h2>
           <p>아래 주소를 복사해 브라우저, 패키지 매니저, 동기화 도구 설정에 사용하세요.</p>
@@ -310,15 +412,6 @@
             </div>
           </dl>
         </section>
-
-        <section class="card" aria-labelledby="quick-links-title">
-          <h2 id="quick-links-title">빠른 이동</h2>
-          <p>웹 미러 목록으로 바로 이동합니다.</p>
-          <div class="actions">
-            <a class="button" href="https://mirror.keiminem.com/">미러 1</a>
-            <a class="button secondary" href="https://mirror2.keiminem.com/">미러 2</a>
-          </div>
-        </section>
       </aside>
     </div>
 
@@ -326,5 +419,18 @@
       <p>각 미러의 파일 목록과 동기화 상태는 해당 미러 서버의 fancyindex 페이지에서 확인하세요.</p>
     </footer>
   </main>
+
+  <script>
+    const visitorIp = document.getElementById('visitor-ip');
+
+    fetch('https://api.ipify.org?format=json')
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('IP lookup failed')))
+      .then((data) => {
+        visitorIp.textContent = data.ip || '확인할 수 없음';
+      })
+      .catch(() => {
+        visitorIp.textContent = '확인할 수 없음';
+      });
+  </script>
 </body>
 </html>
