@@ -3,6 +3,11 @@ import { translations } from './i18n.js';
 const root = document.documentElement;
 const themes = ['auto', 'light', 'dark'];
 
+const mirrorTargets = {
+  mirror1: { url: 'https://mirror.keiminem.com/', titleKey: 'mirrorOneTitle' },
+  mirror2: { url: 'https://mirror2.keiminem.com/', titleKey: 'mirrorTwoTitle' },
+};
+
 async function loadComponent(host) {
   const componentPath = host.dataset.component;
   const response = await fetch(componentPath);
@@ -48,6 +53,35 @@ function applyLanguage(language) {
   localStorage.setItem('keimirror-language', language);
 }
 
+
+function showMirrorList(mirrorId) {
+  const mirror = mirrorTargets[mirrorId];
+  if (!mirror) return;
+
+  const placeholder = document.querySelector('[data-mirror-placeholder]');
+  const mirrorList = document.querySelector('[data-mirror-list]');
+  const mirrorTitle = document.querySelector('[data-mirror-title]');
+  const mirrorFrame = document.querySelector('[data-mirror-frame]');
+  const mirrorOpen = document.querySelector('[data-mirror-open]');
+  const dictionary = translations[root.lang] || translations.en;
+
+  if (!mirrorList || !mirrorFrame || !mirrorOpen) return;
+
+  if (placeholder) placeholder.hidden = true;
+  mirrorList.hidden = false;
+  mirrorList.dataset.activeMirror = mirrorId;
+  mirrorFrame.src = mirror.url;
+  mirrorOpen.href = mirror.url;
+
+  if (mirrorTitle) mirrorTitle.textContent = dictionary[mirror.titleKey] || mirror.url;
+
+  document.querySelectorAll('[data-mirror-trigger]').forEach((trigger) => {
+    const isActive = trigger.dataset.mirrorTrigger === mirrorId;
+    trigger.classList.toggle('primary', isActive);
+    trigger.setAttribute('aria-pressed', String(isActive));
+  });
+}
+
 function bindControls() {
   document.getElementById('theme-toggle')?.addEventListener('click', () => {
     const current = localStorage.getItem('keimirror-theme') || 'auto';
@@ -56,7 +90,20 @@ function bindControls() {
 
   document.getElementById('language-toggle')?.addEventListener('click', () => {
     const current = localStorage.getItem('keimirror-language') || 'en';
-    applyLanguage(current === 'en' ? 'ko' : 'en');
+    const nextLanguage = current === 'en' ? 'ko' : 'en';
+    applyLanguage(nextLanguage);
+
+    const activeMirror = document.querySelector('[data-mirror-list]')?.dataset.activeMirror;
+    if (activeMirror) showMirrorList(activeMirror);
+  });
+
+  document.querySelectorAll('[data-mirror-trigger]').forEach((trigger) => {
+    trigger.setAttribute('role', 'button');
+    trigger.setAttribute('aria-pressed', 'false');
+    trigger.addEventListener('click', (event) => {
+      event.preventDefault();
+      showMirrorList(trigger.dataset.mirrorTrigger);
+    });
   });
 }
 

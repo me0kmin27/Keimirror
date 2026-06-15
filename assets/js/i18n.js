@@ -1,6 +1,7 @@
 export const translations = {
   en: {
     navMirror1: 'Mirror 1', navMirror2: 'Mirror 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
+    mirrorListEyebrow: 'Directory list', mirrorListTitle: 'Select a mirror', mirrorListOpenNew: 'Open in new tab',
     heroTitle: 'Keiverse Public Mirror', heroLead: 'A fast public mirror for open-source software repositories, operated by Keiverse from South Korea.',
     welcomeTitle: 'Welcome to Keimirror',
     welcomeBody: "Keimirror mirrors Linux distributions and open-source repositories from Keiverse's own infrastructure in Gumi, South Korea. It focuses on fast domestic access, official mirror participation, CDN-assisted resilience, and predictable synchronization from real-time updates to daily refreshes.",
@@ -25,6 +26,7 @@ export const translations = {
   },
   ko: {
     navMirror1: '미러 1', navMirror2: '미러 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
+    mirrorListEyebrow: '디렉터리 목록', mirrorListTitle: '미러를 선택하세요', mirrorListOpenNew: '새 탭에서 열기',
     heroTitle: 'Keiverse 공개 미러', heroLead: 'Keiverse가 대한민국에서 운영하는 빠른 오픈소스 소프트웨어 저장소 공개 미러입니다.',
     welcomeTitle: 'Keimirror에 오신 것을 환영합니다',
     welcomeBody: 'Keimirror는 대한민국 구미에 있는 Keiverse 자체 인프라에서 리눅스 배포판과 오픈소스 저장소를 미러링합니다. 빠른 국내 접속, 공식 미러 운영, CDN 기반 안정성, 실시간부터 일 단위까지 예측 가능한 동기화에 중점을 둡니다.',
