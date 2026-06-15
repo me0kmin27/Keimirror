@@ -1,13 +1,34 @@
-<div class="content-block" aria-labelledby="left-server-title">
+<div class="content-block server-profile" aria-labelledby="left-server-title">
   <h3 id="left-server-title" data-i18n="serverProfileTitle">Server profile</h3>
-  <p data-i18n="serverProfileBody">Hardware details can be updated here as capacity changes. The public endpoints below remain the recommended entry points for package managers, browsers, and synchronization tools.</p>
-  <table class="info-table">
-    <tbody>
-      <tr><th scope="row">CPU</th><td data-i18n="pending">To be announced</td></tr>
-      <tr><th scope="row">Memory</th><td data-i18n="pending">To be announced</td></tr>
-      <tr><th scope="row">Storage</th><td data-i18n="pending">To be announced</td></tr>
-      <tr><th scope="row">Network</th><td data-i18n="networkValue">Dual 1 Gbps dedicated uplinks / load-balanced</td></tr>
-      <tr><th scope="row">Location</th><td data-i18n="locationValue">Gumi, South Korea</td></tr>
-    </tbody>
-  </table>
+  <p data-i18n="serverProfileBody">Mirror 1 and Mirror 2 are separate Gumi-based servers. Both mirrors use a CDN only for DDoS mitigation, with CDN caching disabled so files are served directly from the origin mirrors.</p>
+
+  <div class="server-profile-grid" aria-label="Mirror server specifications">
+    <section class="server-spec" aria-labelledby="mirror-one-spec-title">
+      <h4 id="mirror-one-spec-title" data-i18n="mirrorOneTitle">Mirror 1</h4>
+      <table class="info-table">
+        <tbody>
+          <tr><th scope="row">CPU</th><td data-i18n="mirrorOneCpu">Intel Xeon E5-2650 v2 (2 sockets)</td></tr>
+          <tr><th scope="row">RAM</th><td data-i18n="mirrorOneRam">128 GB</td></tr>
+          <tr><th scope="row">Storage</th><td data-i18n="mirrorStorage">10 TB</td></tr>
+          <tr><th scope="row">Network</th><td data-i18n="mirrorNetwork">2 WAN links, 1 Gbps each / 2 Gbps total</td></tr>
+          <tr><th scope="row">Location</th><td data-i18n="locationValue">Gumi, South Korea</td></tr>
+          <tr><th scope="row">CDN</th><td data-i18n="mirrorCdnPolicy">CDN-enabled for DDoS mitigation only; CDN caching is not used.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="server-spec" aria-labelledby="mirror-two-spec-title">
+      <h4 id="mirror-two-spec-title" data-i18n="mirrorTwoTitle">Mirror 2</h4>
+      <table class="info-table">
+        <tbody>
+          <tr><th scope="row">CPU</th><td data-i18n="mirrorTwoCpu">Intel Xeon E5-2696 v4</td></tr>
+          <tr><th scope="row">RAM</th><td data-i18n="mirrorTwoRam">32 GB</td></tr>
+          <tr><th scope="row">Storage</th><td data-i18n="mirrorStorage">10 TB</td></tr>
+          <tr><th scope="row">Network</th><td data-i18n="mirrorNetwork">2 WAN links, 1 Gbps each / 2 Gbps total</td></tr>
+          <tr><th scope="row">Location</th><td data-i18n="locationValue">Gumi, South Korea</td></tr>
+          <tr><th scope="row">CDN</th><td data-i18n="mirrorCdnPolicy">CDN-enabled for DDoS mitigation only; CDN caching is not used.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
 </div>
