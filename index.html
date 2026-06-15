@@ -1,44 +1,108 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Keimirror Mirrors</title>
-  <meta name="description" content="mirror.keiminem.com, mirror2.keiminem.com, rsync.keiminem.com, rsync2.keiminem.com 접속 정보를 안내하는 Keimirror 허브 페이지">
+  <title>Keimirror Public Mirror | Keiverse Open Source Mirror in South Korea</title>
+  <meta name="description" content="Keimirror is the Keiverse public mirror in South Korea, offering HTTP, HTTPS, and rsync access for open-source software repositories through mirror.keiminem.com and mirror2.keiminem.com.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="canonical" href="https://mirror.keiminem.com/">
+  <link rel="alternate" hreflang="en" href="https://mirror.keiminem.com/">
+  <link rel="alternate" hreflang="ko" href="https://mirror.keiminem.com/?lang=ko">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Keimirror Public Mirror">
+  <meta property="og:description" content="A fast Keiverse public mirror for open-source software packages, operated from South Korea with HTTP, HTTPS, and rsync endpoints.">
+  <meta property="og:url" content="https://mirror.keiminem.com/">
+  <meta property="og:site_name" content="Keimirror">
+  <meta name="twitter:card" content="summary">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Keimirror Public Mirror",
+      "url": "https://mirror.keiminem.com/",
+      "description": "Keiverse public mirror service in South Korea for open-source software repositories.",
+      "inLanguage": ["en", "ko"],
+      "publisher": {
+        "@type": "Organization",
+        "name": "Keiverse",
+        "url": "https://keiminem.com/"
+      }
+    }
+  </script>
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #0b1020;
-      --panel: rgba(18, 24, 38, 0.86);
-      --panel-soft: rgba(30, 41, 59, 0.72);
-      --panel-strong: #1e293b;
-      --text: #f8fafc;
-      --muted: #b6c2d2;
-      --accent: #67e8f9;
-      --accent-strong: #22d3ee;
-      --accent-warm: #fbbf24;
-      --border: rgba(255, 255, 255, 0.14);
-      --shadow: rgba(0, 0, 0, 0.34);
+      color-scheme: light dark;
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --surface-muted: #f1f5f9;
+      --text: #172033;
+      --muted: #657085;
+      --border: #dfe5ef;
+      --primary: #2563eb;
+      --primary-soft: #e8f0ff;
+      --success: #0f9f6e;
+      --shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+      --radius: 22px;
     }
 
-    * {
-      box-sizing: border-box;
+    :root[data-theme="dark"] {
+      --bg: #101622;
+      --surface: #151d2b;
+      --surface-muted: #1d2838;
+      --text: #eef4ff;
+      --muted: #9ca9bd;
+      --border: #2c394d;
+      --primary: #7aa7ff;
+      --primary-soft: rgba(122, 167, 255, 0.14);
+      --success: #65d6a2;
+      --shadow: 0 22px 54px rgba(0, 0, 0, 0.22);
     }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        --bg: #101622;
+        --surface: #151d2b;
+        --surface-muted: #1d2838;
+        --text: #eef4ff;
+        --muted: #9ca9bd;
+        --border: #2c394d;
+        --primary: #7aa7ff;
+        --primary-soft: rgba(122, 167, 255, 0.14);
+        --success: #65d6a2;
+        --shadow: 0 22px 54px rgba(0, 0, 0, 0.22);
+      }
+    }
+
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at 12% 8%, rgba(34, 211, 238, 0.22), transparent 30rem),
-        radial-gradient(circle at 88% 16%, rgba(251, 191, 36, 0.14), transparent 25rem),
-        linear-gradient(135deg, #0b1020 0%, #111827 52%, #0f172a 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
       color: var(--text);
       line-height: 1.65;
     }
 
-    a {
-      color: inherit;
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+      background:
+        radial-gradient(circle at 8% -4%, rgba(37, 99, 235, 0.14), transparent 28rem),
+        radial-gradient(circle at 92% 0%, rgba(15, 159, 110, 0.12), transparent 24rem);
+    }
+
+    a { color: inherit; }
+    h1, h2, h3, p { margin-top: 0; }
+
+    .site-shell {
+      width: min(1120px, calc(100% - 2rem));
+      margin: 0 auto;
     }
 
     .topbar {
@@ -46,8 +110,8 @@
       top: 0;
       z-index: 10;
       border-bottom: 1px solid var(--border);
-      background: rgba(11, 16, 32, 0.78);
-      backdrop-filter: blur(18px);
+      background: color-mix(in srgb, var(--bg) 84%, transparent);
+      backdrop-filter: blur(16px);
     }
 
     .topbar-inner {
@@ -55,343 +119,326 @@
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      width: min(1180px, calc(100% - 2rem));
-      margin: 0 auto;
-      padding: 0.9rem 0;
+      padding: 0.95rem 0;
     }
 
     .logo {
       display: inline-flex;
       align-items: center;
-      gap: 0.65rem;
-      color: var(--text);
-      font-size: 1.05rem;
-      font-weight: 900;
+      gap: 0.75rem;
+      font-size: 1rem;
+      font-weight: 800;
       letter-spacing: -0.02em;
       text-decoration: none;
     }
 
     .logo-mark {
       display: grid;
-      width: 2.35rem;
-      height: 2.35rem;
+      width: 2.1rem;
+      height: 2.1rem;
       place-items: center;
-      border-radius: 0.8rem;
-      background: linear-gradient(135deg, var(--accent-strong), var(--accent-warm));
-      color: #06121b;
-      box-shadow: 0 0.75rem 1.7rem rgba(34, 211, 238, 0.22);
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: var(--shadow);
     }
 
     .nav-actions {
       display: flex;
       flex-wrap: wrap;
       justify-content: flex-end;
-      gap: 0.6rem;
+      gap: 0.5rem;
     }
 
-    main {
-      width: min(1180px, calc(100% - 2rem));
-      margin: 0 auto;
-      padding: 3.5rem 0 4.5rem;
-    }
+    main { padding: 4.25rem 0 3rem; }
 
     .hero {
+      display: grid;
+      gap: 1.25rem;
       margin-bottom: 2rem;
-      text-align: center;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
     }
 
     .eyebrow {
-      color: var(--accent);
+      width: fit-content;
+      padding: 0.28rem 0.72rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--primary);
+      font-size: 0.78rem;
       font-weight: 800;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
     }
 
-    h1,
-    h2,
-    h3,
-    p {
-      margin-top: 0;
-    }
-
     h1 {
-      margin-bottom: 1rem;
-      font-size: clamp(2.35rem, 7vw, 5.6rem);
-      line-height: 1.02;
-      letter-spacing: -0.05em;
+      max-width: 760px;
+      margin-bottom: 0;
+      font-size: clamp(2.6rem, 7vw, 5rem);
+      line-height: 0.98;
+      letter-spacing: -0.07em;
     }
 
     .lead {
-      max-width: 820px;
-      margin: 0 auto;
+      max-width: 720px;
+      margin-bottom: 0;
       color: var(--muted);
-      font-size: clamp(1.05rem, 2vw, 1.35rem);
+      font-size: clamp(1.04rem, 2vw, 1.24rem);
     }
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.85fr);
-      gap: 1.25rem;
+      grid-template-columns: minmax(0, 1.45fr) minmax(310px, 0.85fr);
+      gap: 1rem;
       align-items: start;
     }
 
-    .column {
+    .column { display: grid; gap: 1rem; }
+
+    .meta-grid {
       display: grid;
-      gap: 1.25rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
     }
+
+    .meta-item {
+      padding: 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface-muted);
+    }
+
+    .meta-item strong {
+      display: block;
+      margin-bottom: 0.18rem;
+      color: var(--text);
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+
+    .meta-item span { color: var(--muted); font-size: 0.92rem; }
 
     .card {
       border: 1px solid var(--border);
-      border-radius: 1.35rem;
-      background: var(--panel);
-      box-shadow: 0 1.25rem 3rem var(--shadow);
-      backdrop-filter: blur(18px);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      box-shadow: var(--shadow);
       padding: clamp(1.25rem, 3vw, 1.8rem);
     }
 
-    .card.featured {
-      background:
-        linear-gradient(135deg, rgba(103, 232, 249, 0.11), rgba(251, 191, 36, 0.07)),
-        var(--panel);
-    }
+    .card.featured { min-height: 100%; }
 
     .card h2 {
-      margin-bottom: 0.65rem;
-      font-size: clamp(1.35rem, 2vw, 1.9rem);
+      margin-bottom: 0.5rem;
+      font-size: clamp(1.25rem, 2vw, 1.65rem);
       line-height: 1.2;
+      letter-spacing: -0.035em;
     }
 
-    .card p {
-      color: var(--muted);
-    }
-
-    .card p:last-child,
-    .card ul:last-child,
-    .card dl:last-child {
-      margin-bottom: 0;
-    }
+    .card p { color: var(--muted); }
+    .card p:last-child, .card ul:last-child, .card dl:last-child { margin-bottom: 0; }
 
     .content-block {
-      padding-top: 1.1rem;
-      margin-top: 1.1rem;
+      padding-top: 1.25rem;
+      margin-top: 1.25rem;
       border-top: 1px solid var(--border);
     }
 
     .content-block h3 {
-      margin-bottom: 0.5rem;
-      color: var(--text);
-      font-size: 1.12rem;
+      margin-bottom: 0.55rem;
+      font-size: 1.02rem;
+      letter-spacing: -0.02em;
     }
 
     .info-table {
       width: 100%;
-      margin-top: 0.8rem;
-      border-collapse: collapse;
+      margin-top: 0.85rem;
+      border-collapse: separate;
+      border-spacing: 0;
       overflow: hidden;
       border: 1px solid var(--border);
-      border-radius: 1rem;
-      background: rgba(15, 23, 42, 0.62);
+      border-radius: 16px;
+      background: var(--surface-muted);
     }
 
-    .info-table th,
-    .info-table td {
-      padding: 0.85rem 0.9rem;
+    .info-table th, .info-table td {
+      padding: 0.82rem 0.95rem;
       border-bottom: 1px solid var(--border);
       text-align: left;
       vertical-align: top;
     }
 
-    .info-table tr:last-child th,
-    .info-table tr:last-child td {
-      border-bottom: 0;
-    }
+    .info-table tr:last-child th, .info-table tr:last-child td { border-bottom: 0; }
+    .info-table th { width: 8.5rem; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
 
-    .info-table th {
-      width: 8.5rem;
-      color: var(--accent-warm);
-      font-size: 0.82rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .visitor-ip {
+    .visitor-ip, .domain {
       display: inline-flex;
       max-width: 100%;
-      margin-top: 0.35rem;
-      padding: 0.55rem 0.75rem;
-      border-radius: 0.8rem;
-      background: var(--panel-strong);
-      color: var(--accent);
+      border-radius: 0.75rem;
+      background: var(--surface-muted);
+      color: var(--primary);
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 1rem;
       word-break: break-all;
     }
 
-    .info-list {
-      display: grid;
-      gap: 0.85rem;
-      margin: 1rem 0 0;
-    }
+    .visitor-ip { margin-top: 0.25rem; padding: 0.58rem 0.78rem; font-size: 1rem; }
+    .domain { width: fit-content; padding: 0.34rem 0.56rem; font-size: 0.9rem; }
+
+    .info-list { display: grid; gap: 0.7rem; margin: 1rem 0 0; }
 
     .endpoint {
       display: grid;
       gap: 0.35rem;
-      padding: 0.95rem;
+      padding: 0.92rem;
       border: 1px solid var(--border);
-      border-radius: 1rem;
-      background: rgba(15, 23, 42, 0.72);
+      border-radius: 16px;
+      background: var(--surface-muted);
     }
 
     .endpoint dt {
-      color: var(--accent-warm);
-      font-size: 0.78rem;
-      font-weight: 800;
+      color: var(--success);
+      font-size: 0.76rem;
+      font-weight: 850;
       letter-spacing: 0.1em;
       text-transform: uppercase;
     }
 
-    .endpoint dd {
-      margin: 0;
-    }
+    .endpoint dd { margin: 0; }
 
-    code,
-    .domain {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    }
-
-    .domain {
-      display: inline-flex;
-      width: fit-content;
-      padding: 0.38rem 0.58rem;
-      border-radius: 0.7rem;
-      background: var(--panel-strong);
-      color: var(--accent);
-      font-size: 0.92rem;
-      word-break: break-all;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.7rem;
-      margin-top: 1.1rem;
-    }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 1.15rem; }
 
     .button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 2.85rem;
-      padding: 0.7rem 1rem;
-      border-radius: 0.85rem;
-      background: var(--accent-strong);
-      color: #06121b;
-      font-weight: 850;
-      text-decoration: none;
-      transition: transform 160ms ease, background 160ms ease;
-    }
-
-    .button.secondary {
+      min-height: 2.55rem;
+      padding: 0.62rem 0.9rem;
       border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.07);
+      border-radius: 999px;
+      background: var(--surface);
       color: var(--text);
+      font-weight: 750;
+      text-decoration: none;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
     }
 
-    .button:hover,
-    .button:focus-visible {
-      background: var(--accent);
-      transform: translateY(-2px);
+    .button.primary {
+      border-color: transparent;
+      background: var(--primary);
+      color: #ffffff;
     }
 
-    .button.secondary:hover,
-    .button.secondary:focus-visible {
-      background: rgba(255, 255, 255, 0.12);
+    .button:hover, .button:focus-visible {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary);
+      transform: translateY(-1px);
     }
+
+    .button.primary:hover, .button.primary:focus-visible { background: #1d4ed8; color: #ffffff; }
+
+    .theme-toggle { cursor: pointer; }
 
     footer {
       margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
       color: var(--muted);
-      font-size: 0.95rem;
+      font-size: 0.92rem;
     }
 
     @media (max-width: 900px) {
-      .topbar-inner {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .nav-actions {
-        justify-content: flex-start;
-      }
-
-      main {
-        padding: 3rem 0;
-      }
-
-      .layout {
-        grid-template-columns: 1fr;
-      }
+      .topbar-inner { align-items: flex-start; flex-direction: column; }
+      .nav-actions { justify-content: flex-start; }
+      main { padding: 3rem 0; }
+      .layout { grid-template-columns: 1fr; }
+      .meta-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <header class="topbar" aria-label="상단 메뉴">
-    <div class="topbar-inner">
-      <a class="logo" href="/" aria-label="Keimirror 홈">
+  <header class="topbar" aria-label="Site header">
+    <div class="topbar-inner site-shell">
+      <a class="logo" href="/" aria-label="Keimirror home">
         <span class="logo-mark">K</span>
         <span>Keimirror</span>
       </a>
-      <nav class="nav-actions" aria-label="다른 메뉴로 이동">
-        <a class="button secondary" href="https://mirror.keiminem.com/">Mirror 1</a>
-        <a class="button secondary" href="https://mirror2.keiminem.com/">Mirror 2</a>
-        <a class="button secondary" href="https://keiverse.com/">Keiverse</a>
+      <nav class="nav-actions" aria-label="Primary navigation">
+        <a class="button" href="https://mirror.keiminem.com/" data-i18n="navMirror1">Mirror 1</a>
+        <a class="button" href="https://mirror2.keiminem.com/" data-i18n="navMirror2">Mirror 2</a>
+        <a class="button" href="https://keiminem.com/" data-i18n="navKeiverse">Keiverse</a>
+        <button class="button" type="button" id="language-toggle" aria-label="Switch language">한국어</button>
+        <button class="button theme-toggle" type="button" id="theme-toggle" aria-label="Change theme">Auto</button>
       </nav>
     </div>
   </header>
 
-  <main>
+  <main class="site-shell">
     <section class="hero" aria-labelledby="page-title">
-      <div class="eyebrow">Keimirror</div>
-      <h1 id="page-title">Keimirror</h1>
-      <p class="lead">Keiverse 공개미러</p>
+      <div class="eyebrow" data-i18n="eyebrow">Keimirror</div>
+      <h1 id="page-title" data-i18n="heroTitle">Keiverse Public Mirror</h1>
+      <p class="lead" data-i18n="heroLead">A fast public mirror for open-source software repositories, operated by Keiverse from South Korea.</p>
     </section>
 
     <div class="layout">
-      <div class="column" aria-label="Keimirror 안내">
+      <div class="column" aria-label="Keimirror overview">
         <section class="card featured" aria-labelledby="welcome-title">
-          <h2 id="welcome-title">환영합니다</h2>
-          <p>Keimirror는 Keiverse에서 운영하는 공개 미러 안내 페이지입니다. 자주 사용하는 웹 미러와 rsync 주소를 한 곳에서 확인하고 필요한 저장소로 빠르게 이동할 수 있습니다.</p>
+          <h2 id="welcome-title" data-i18n="welcomeTitle">Welcome to Keimirror</h2>
+          <p data-i18n="welcomeBody">Keimirror is the public mirror service of Keiverse. Keiverse has provided privacy-focused alternative services since 2023 and operates its infrastructure from a private data center in Gumi, South Korea. The mirror is designed for low-latency access to Linux distributions and open-source packages for users in Korea and nearby networks.</p>
+
+          <div class="meta-grid" aria-label="Keiverse highlights">
+            <div class="meta-item">
+              <strong data-i18n="highlightLocationTitle">South Korea infrastructure</strong>
+              <span data-i18n="highlightLocationBody">Operated from Keiverse's own data-center environment in Gumi.</span>
+            </div>
+            <div class="meta-item">
+              <strong data-i18n="highlightNetworkTitle">Dual-ISP network</strong>
+              <span data-i18n="highlightNetworkBody">Designed around two 1 Gbps dedicated uplinks with load balancing.</span>
+            </div>
+            <div class="meta-item">
+              <strong data-i18n="highlightPrivacyTitle">Privacy-first services</strong>
+              <span data-i18n="highlightPrivacyBody">Part of a broader Keiverse ecosystem of privacy-focused alternatives.</span>
+            </div>
+            <div class="meta-item">
+              <strong data-i18n="highlightSyncTitle">Synchronized operations</strong>
+              <span data-i18n="highlightSyncBody">Keiverse services are coordinated with the project's own time-server setup.</span>
+            </div>
+          </div>
 
           <div class="content-block" aria-labelledby="disclaimer-title">
-            <h3 id="disclaimer-title">면책조항</h3>
-            <p>본 공개 미러는 편의를 위해 제공되며, 각 프로젝트의 공식 배포처를 대체하지 않습니다. 파일의 무결성, 최신성, 사용 가능 여부는 원본 프로젝트의 안내와 체크섬을 함께 확인해 주세요.</p>
-            <p>서비스 점검, 동기화 지연, 네트워크 상황에 따라 일부 파일 접근이 일시적으로 제한될 수 있습니다.</p>
+            <h3 id="disclaimer-title" data-i18n="disclaimerTitle">Disclaimer</h3>
+            <p data-i18n="disclaimerBody1">When an upstream project lists Keimirror as an official mirror, this service is an official distribution endpoint for that project. Keimirror still serves mirrored files as provided by upstream projects and does not change their licenses, release policies, package contents, or security advisories.</p>
+            <p data-i18n="disclaimerBody2">The service is operated on a best-effort basis. Synchronization delays, maintenance windows, routing changes, or abusive traffic controls may temporarily affect availability. Always verify critical downloads with the checksums and signatures published by the upstream project.</p>
           </div>
 
           <div class="content-block" aria-labelledby="left-server-title">
-            <h3 id="left-server-title">서버 정보</h3>
-            <p>하드웨어 스펙과 회선 정보는 아래 표에 입력해 안내합니다.</p>
+            <h3 id="left-server-title" data-i18n="serverProfileTitle">Server profile</h3>
+            <p data-i18n="serverProfileBody">Hardware details can be updated here as capacity changes. The public endpoints below remain the recommended entry points for package managers, browsers, and synchronization tools.</p>
             <table class="info-table">
               <tbody>
                 <tr>
                   <th scope="row">CPU</th>
-                  <td>입력 예정</td>
+                  <td data-i18n="pending">To be announced</td>
                 </tr>
                 <tr>
                   <th scope="row">Memory</th>
-                  <td>입력 예정</td>
+                  <td data-i18n="pending">To be announced</td>
                 </tr>
                 <tr>
                   <th scope="row">Storage</th>
-                  <td>입력 예정</td>
+                  <td data-i18n="pending">To be announced</td>
                 </tr>
                 <tr>
                   <th scope="row">Network</th>
-                  <td>입력 예정</td>
+                  <td data-i18n="networkValue">Dual 1 Gbps dedicated uplinks / load-balanced</td>
                 </tr>
                 <tr>
                   <th scope="row">Location</th>
-                  <td>입력 예정</td>
+                  <td data-i18n="locationValue">Gumi, South Korea</td>
                 </tr>
               </tbody>
             </table>
@@ -399,26 +446,26 @@
         </section>
       </div>
 
-      <aside class="column" aria-label="접속 및 서버 정보">
+      <aside class="column" aria-label="Connection and mirror information">
         <section class="card" aria-labelledby="visitor-ip-title">
-          <h2 id="visitor-ip-title">접속자 IP</h2>
-          <p>현재 접속 중인 클라이언트 IP입니다.</p>
-          <span class="visitor-ip" id="visitor-ip">확인 중...</span>
+          <h2 id="visitor-ip-title" data-i18n="ipTitle">Your IP</h2>
+          <p data-i18n="ipBody">Your current client IP address.</p>
+          <span class="visitor-ip" id="visitor-ip" data-i18n="checkingIp">Checking...</span>
         </section>
 
         <section class="card" aria-labelledby="server-info-title">
-          <h2 id="server-info-title">서버 정보</h2>
-          <p>아래 주소를 복사해 브라우저, 패키지 매니저, 동기화 도구 설정에 사용하세요.</p>
+          <h2 id="server-info-title" data-i18n="mirrorInfoTitle">Mirror access</h2>
+          <p data-i18n="mirrorInfoBody">Use these endpoints in browsers, package managers, and rsync-based synchronization jobs.</p>
           <dl class="info-list">
             <div class="endpoint">
-              <dt>HTTP</dt>
-              <dd><span class="domain">http://mirror.keiminem.com/</span></dd>
-              <dd><span class="domain">http://mirror2.keiminem.com/</span></dd>
+              <dt>HTTPS</dt>
+              <dd><a class="domain" href="https://mirror.keiminem.com/">https://mirror.keiminem.com/</a></dd>
+              <dd><a class="domain" href="https://mirror2.keiminem.com/">https://mirror2.keiminem.com/</a></dd>
             </div>
             <div class="endpoint">
-              <dt>HTTPS</dt>
-              <dd><span class="domain">https://mirror.keiminem.com/</span></dd>
-              <dd><span class="domain">https://mirror2.keiminem.com/</span></dd>
+              <dt>HTTP</dt>
+              <dd><a class="domain" href="http://mirror.keiminem.com/">http://mirror.keiminem.com/</a></dd>
+              <dd><a class="domain" href="http://mirror2.keiminem.com/">http://mirror2.keiminem.com/</a></dd>
             </div>
             <div class="endpoint">
               <dt>RSYNC</dt>
@@ -431,21 +478,99 @@
     </div>
 
     <footer>
-      <p>각 미러의 파일 목록과 동기화 상태는 해당 미러 서버의 fancyindex 페이지에서 확인하세요.</p>
+      <p data-i18n="footerText">Directory listings and synchronization status are available on each mirror server's fancyindex page.</p>
     </footer>
   </main>
 
   <script>
     const visitorIp = document.getElementById('visitor-ip');
+    const themeToggle = document.getElementById('theme-toggle');
+    const languageToggle = document.getElementById('language-toggle');
+    const root = document.documentElement;
+    const themes = ['auto', 'light', 'dark'];
+    const translations = {
+      en: {
+        navMirror1: 'Mirror 1', navMirror2: 'Mirror 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
+        heroTitle: 'Keiverse Public Mirror', heroLead: 'A fast public mirror for open-source software repositories, operated by Keiverse from South Korea.',
+        welcomeTitle: 'Welcome to Keimirror',
+        welcomeBody: 'Keimirror is the public mirror service of Keiverse. Keiverse has provided privacy-focused alternative services since 2023 and operates its infrastructure from a private data center in Gumi, South Korea. The mirror is designed for low-latency access to Linux distributions and open-source packages for users in Korea and nearby networks.',
+        highlightLocationTitle: 'South Korea infrastructure', highlightLocationBody: "Operated from Keiverse's own data-center environment in Gumi.",
+        highlightNetworkTitle: 'Dual-ISP network', highlightNetworkBody: 'Designed around two 1 Gbps dedicated uplinks with load balancing.',
+        highlightPrivacyTitle: 'Privacy-first services', highlightPrivacyBody: 'Part of a broader Keiverse ecosystem of privacy-focused alternatives.',
+        highlightSyncTitle: 'Synchronized operations', highlightSyncBody: "Keiverse services are coordinated with the project's own time-server setup.",
+        disclaimerTitle: 'Disclaimer',
+        disclaimerBody1: 'When an upstream project lists Keimirror as an official mirror, this service is an official distribution endpoint for that project. Keimirror still serves mirrored files as provided by upstream projects and does not change their licenses, release policies, package contents, or security advisories.',
+        disclaimerBody2: 'The service is operated on a best-effort basis. Synchronization delays, maintenance windows, routing changes, or abusive traffic controls may temporarily affect availability. Always verify critical downloads with the checksums and signatures published by the upstream project.',
+        serverProfileTitle: 'Server profile', serverProfileBody: 'Hardware details can be updated here as capacity changes. The public endpoints below remain the recommended entry points for package managers, browsers, and synchronization tools.',
+        pending: 'To be announced', networkValue: 'Dual 1 Gbps dedicated uplinks / load-balanced', locationValue: 'Gumi, South Korea',
+        ipTitle: 'Your IP', ipBody: 'Your current client IP address.', checkingIp: 'Checking...', ipUnknown: 'Unavailable',
+        mirrorInfoTitle: 'Mirror access', mirrorInfoBody: 'Use these endpoints in browsers, package managers, and rsync-based synchronization jobs.',
+        footerText: "Directory listings and synchronization status are available on each mirror server's fancyindex page."
+      },
+      ko: {
+        navMirror1: '미러 1', navMirror2: '미러 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
+        heroTitle: 'Keiverse 공개 미러', heroLead: 'Keiverse가 대한민국에서 운영하는 오픈소스 소프트웨어 저장소용 고속 공개 미러입니다.',
+        welcomeTitle: 'Keimirror에 오신 것을 환영합니다',
+        welcomeBody: 'Keimirror는 Keiverse의 공개 미러 서비스입니다. Keiverse는 2023년부터 프라이버시 중심의 대안 서비스를 제공해 왔으며, 대한민국 구미의 자체 데이터센터 인프라에서 서비스를 운영합니다. 이 미러는 국내 및 인접 네트워크 이용자가 리눅스 배포판과 오픈소스 패키지에 낮은 지연 시간으로 접근할 수 있도록 설계되었습니다.',
+        highlightLocationTitle: '대한민국 인프라', highlightLocationBody: '구미에 위치한 Keiverse 자체 데이터센터 환경에서 운영됩니다.',
+        highlightNetworkTitle: '이중 ISP 네트워크', highlightNetworkBody: '2개의 1Gbps 전용 업링크와 로드밸런싱 구성을 기반으로 설계되었습니다.',
+        highlightPrivacyTitle: '프라이버시 우선 서비스', highlightPrivacyBody: '프라이버시 중심 대안 서비스를 제공하는 Keiverse 생태계의 일부입니다.',
+        highlightSyncTitle: '동기화된 운영', highlightSyncBody: 'Keiverse 서비스는 자체 타임서버 구성을 기반으로 운영 동기화를 유지합니다.',
+        disclaimerTitle: '면책조항',
+        disclaimerBody1: '상위 프로젝트가 Keimirror를 공식 미러로 등재한 경우, 본 서비스는 해당 프로젝트의 공식 배포 엔드포인트입니다. 다만 Keimirror는 상위 프로젝트가 제공한 파일을 미러링하며 라이선스, 릴리스 정책, 패키지 내용, 보안 공지를 변경하지 않습니다.',
+        disclaimerBody2: '서비스는 최선의 노력 기준으로 운영됩니다. 동기화 지연, 점검, 라우팅 변경, 서비스 방해 트래픽 제한으로 인해 일시적으로 이용이 제한될 수 있습니다. 중요한 다운로드는 항상 상위 프로젝트가 게시한 체크섬과 서명으로 검증해 주세요.',
+        serverProfileTitle: '서버 프로필', serverProfileBody: '하드웨어 세부 정보는 용량 변경에 따라 업데이트할 수 있습니다. 아래 공개 엔드포인트는 패키지 매니저, 브라우저, 동기화 도구에서 권장되는 접속 주소입니다.',
+        pending: '공개 예정', networkValue: '이중 1Gbps 전용 업링크 / 로드밸런싱', locationValue: '대한민국 구미',
+        ipTitle: '접속자 IP', ipBody: '현재 접속 중인 클라이언트 IP 주소입니다.', checkingIp: '확인 중...', ipUnknown: '확인할 수 없음',
+        mirrorInfoTitle: '미러 접속 정보', mirrorInfoBody: '브라우저, 패키지 매니저, rsync 기반 동기화 작업에 아래 엔드포인트를 사용하세요.',
+        footerText: '각 미러 서버의 fancyindex 페이지에서 파일 목록과 동기화 상태를 확인할 수 있습니다.'
+      }
+    };
 
-    fetch('https://api.ipify.org?format=json')
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error('IP lookup failed')))
-      .then((data) => {
-        visitorIp.textContent = data.ip || '확인할 수 없음';
-      })
-      .catch(() => {
-        visitorIp.textContent = '확인할 수 없음';
+    function applyTheme(theme) {
+      if (theme === 'auto') {
+        root.removeAttribute('data-theme');
+      } else {
+        root.dataset.theme = theme;
+      }
+      themeToggle.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+      localStorage.setItem('keimirror-theme', theme);
+    }
+
+    function applyLanguage(language) {
+      const dictionary = translations[language] || translations.en;
+      document.documentElement.lang = language;
+      document.querySelectorAll('[data-i18n]').forEach((element) => {
+        const key = element.dataset.i18n;
+        if (dictionary[key]) element.textContent = dictionary[key];
       });
+      languageToggle.textContent = language === 'en' ? '한국어' : 'English';
+      localStorage.setItem('keimirror-language', language);
+    }
+
+    themeToggle.addEventListener('click', () => {
+      const current = localStorage.getItem('keimirror-theme') || 'auto';
+      applyTheme(themes[(themes.indexOf(current) + 1) % themes.length]);
+    });
+
+    languageToggle.addEventListener('click', () => {
+      const current = localStorage.getItem('keimirror-language') || 'en';
+      applyLanguage(current === 'en' ? 'ko' : 'en');
+    });
+
+    applyTheme(localStorage.getItem('keimirror-theme') || 'auto');
+    applyLanguage(new URLSearchParams(window.location.search).get('lang') === 'ko' ? 'ko' : (localStorage.getItem('keimirror-language') || 'en'));
+
+    window.addEventListener('load', () => {
+      fetch('https://api.ipify.org?format=json')
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error('IP lookup failed')))
+        .then((data) => {
+          visitorIp.textContent = data.ip || translations[document.documentElement.lang]?.ipUnknown || translations.en.ipUnknown;
+        })
+        .catch(() => {
+          visitorIp.textContent = translations[document.documentElement.lang]?.ipUnknown || translations.en.ipUnknown;
+        });
+    });
   </script>
 </body>
 </html>
