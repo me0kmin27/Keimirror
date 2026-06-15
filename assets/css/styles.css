@@ -81,6 +81,9 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; min-height: 100vh; overflow-x: clip; font-family: var(--font-sans); background: var(--bg); color: var(--text); line-height: 1.58; }
+body.app-loading { visibility: hidden; }
+body.app-ready { visibility: visible; }
+
 body::before { position: fixed; inset: 0; z-index: -1; pointer-events: none; content: ""; background: linear-gradient(90deg, rgba(17, 24, 39, 0.055) 1px, transparent 1px), linear-gradient(180deg, rgba(17, 24, 39, 0.035) 1px, transparent 1px), radial-gradient(circle at 12% 8%, rgba(195, 145, 47, 0.24), transparent 18rem), radial-gradient(circle at 86% 14%, rgba(36, 95, 115, 0.2), transparent 21rem), radial-gradient(circle at 74% 86%, rgba(173, 106, 117, 0.16), transparent 22rem); background-size: 4.5rem 100%, 100% 3.25rem, auto, auto, auto; }
 a { color: inherit; }
 :lang(ko) { word-break: keep-all; line-break: strict; overflow-wrap: break-word; }
@@ -134,6 +137,7 @@ h1 { max-width: 780px; margin-bottom: 0; font-family: var(--font-serif); font-si
 .info-table th { width: 8.5rem; color: var(--oxide); font-size: 0.78rem; text-transform: uppercase; }
 .visitor-ip, .domain { display: inline-flex; max-width: 100%; min-width: 0; border-radius: var(--radius); background: var(--surface-muted); color: var(--primary); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; word-break: break-all; }
 .visitor-ip { margin-top: 0.25rem; padding: 0.58rem 0.78rem; font-size: 1rem; border: 2px solid var(--text); }
+.ip-check-button { width: fit-content; margin-top: 0.75rem; }
 .domain { width: fit-content; padding: 0.34rem 0.56rem; font-size: 0.9rem; }
 .info-list { display: grid; gap: 0.7rem; margin: 1rem 0 0; }
 .endpoint { display: grid; min-width: 0; gap: 0.35rem; padding: 0.92rem; border: 2px solid var(--text); border-radius: var(--radius); background: var(--surface-muted); }
