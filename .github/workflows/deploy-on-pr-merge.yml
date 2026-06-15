@@ -1,5 +1,3 @@
-# .github/workflows/deploy-on-pr-merge.yml
-
 name: Deploy on PR Merge
 
 on:
@@ -13,42 +11,40 @@ permissions:
   contents: read
 
 concurrency:
-  group: production-deploy
+  group: keimirror-production-deploy
   cancel-in-progress: true
 
 jobs:
   deploy:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    environment: keimirror
 
     steps:
       - name: Checkout merged code
         uses: actions/checkout@v4
         with:
-          ref: main
-
-      # 빌드가 필요하면 여기에 추가
-      # - name: Setup Node
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: 22
-      #
-      # - name: Install dependencies
-      #   run: npm ci
-      #
-      # - name: Build
-      #   run: npm run build
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: Prepare SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          printf "%s\n" "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+          ssh-keyscan -T 10 \
+            -p "${{ secrets.DEPLOY_PORT }}" \
+            -t rsa,ecdsa,ed25519 \
+            "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Upload to server
         run: |
           rsync -az --delete \
+            --exclude ".git" \
+            --exclude ".github" \
+            --exclude "node_modules" \
             -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.DEPLOY_PORT }}" \
             ./ \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
