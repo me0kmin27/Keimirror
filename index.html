@@ -150,7 +150,6 @@
     }
 
     .card.featured {
-      min-height: 310px;
       background:
         linear-gradient(135deg, rgba(103, 232, 249, 0.11), rgba(251, 191, 36, 0.07)),
         var(--panel);
@@ -172,9 +171,21 @@
       margin-bottom: 0;
     }
 
+    .content-block {
+      padding-top: 1.1rem;
+      margin-top: 1.1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .content-block h3 {
+      margin-bottom: 0.5rem;
+      color: var(--text);
+      font-size: 1.12rem;
+    }
+
     .info-table {
       width: 100%;
-      margin-top: 1rem;
+      margin-top: 0.8rem;
       border-collapse: collapse;
       overflow: hidden;
       border: 1px solid var(--border);
@@ -350,37 +361,41 @@
         <section class="card featured" aria-labelledby="welcome-title">
           <h2 id="welcome-title">환영합니다</h2>
           <p>Keimirror는 Keiverse에서 운영하는 공개 미러 안내 페이지입니다. 자주 사용하는 웹 미러와 rsync 주소를 한 곳에서 확인하고 필요한 저장소로 빠르게 이동할 수 있습니다.</p>
-          <div class="actions">
-            <a class="button" href="https://mirror.keiminem.com/">기본 미러 열기</a>
-            <a class="button secondary" href="https://mirror2.keiminem.com/">보조 미러 열기</a>
+
+          <div class="content-block" aria-labelledby="disclaimer-title">
+            <h3 id="disclaimer-title">면책조항</h3>
+            <p>본 공개 미러는 편의를 위해 제공되며, 각 프로젝트의 공식 배포처를 대체하지 않습니다. 파일의 무결성, 최신성, 사용 가능 여부는 원본 프로젝트의 안내와 체크섬을 함께 확인해 주세요.</p>
+            <p>서비스 점검, 동기화 지연, 네트워크 상황에 따라 일부 파일 접근이 일시적으로 제한될 수 있습니다.</p>
           </div>
-        </section>
 
-        <section class="card" aria-labelledby="disclaimer-title">
-          <h2 id="disclaimer-title">면책조항</h2>
-          <p>본 공개 미러는 편의를 위해 제공되며, 각 프로젝트의 공식 배포처를 대체하지 않습니다. 파일의 무결성, 최신성, 사용 가능 여부는 원본 프로젝트의 안내와 체크섬을 함께 확인해 주세요.</p>
-          <p>서비스 점검, 동기화 지연, 네트워크 상황에 따라 일부 파일 접근이 일시적으로 제한될 수 있습니다.</p>
-        </section>
-
-        <section class="card" aria-labelledby="left-server-title">
-          <h2 id="left-server-title">서버 정보</h2>
-          <p>주요 접속 방식을 표로 정리했습니다.</p>
-          <table class="info-table">
-            <tbody>
-              <tr>
-                <th scope="row">HTTP</th>
-                <td><span class="domain">http://mirror.keiminem.com/</span><br><span class="domain">http://mirror2.keiminem.com/</span></td>
-              </tr>
-              <tr>
-                <th scope="row">HTTPS</th>
-                <td><span class="domain">https://mirror.keiminem.com/</span><br><span class="domain">https://mirror2.keiminem.com/</span></td>
-              </tr>
-              <tr>
-                <th scope="row">RSYNC</th>
-                <td><span class="domain">rsync://rsync.keiminem.com/</span><br><span class="domain">rsync://rsync2.keiminem.com/</span></td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="content-block" aria-labelledby="left-server-title">
+            <h3 id="left-server-title">서버 정보</h3>
+            <p>하드웨어 스펙과 회선 정보는 아래 표에 입력해 안내합니다.</p>
+            <table class="info-table">
+              <tbody>
+                <tr>
+                  <th scope="row">CPU</th>
+                  <td>입력 예정</td>
+                </tr>
+                <tr>
+                  <th scope="row">Memory</th>
+                  <td>입력 예정</td>
+                </tr>
+                <tr>
+                  <th scope="row">Storage</th>
+                  <td>입력 예정</td>
+                </tr>
+                <tr>
+                  <th scope="row">Network</th>
+                  <td>입력 예정</td>
+                </tr>
+                <tr>
+                  <th scope="row">Location</th>
+                  <td>입력 예정</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
 
