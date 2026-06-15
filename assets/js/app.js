@@ -108,6 +108,8 @@ function bindControls() {
       showMirrorList(trigger.dataset.mirrorTrigger);
     });
   });
+
+  document.getElementById('visitor-ip-check')?.addEventListener('click', showVisitorIp);
 }
 
 function detectInitialLanguage() {
@@ -119,6 +121,8 @@ async function showVisitorIp() {
   const visitorIp = document.getElementById('visitor-ip');
   if (!visitorIp) return;
 
+  visitorIp.textContent = translations[root.lang]?.checkingIp || translations.en.checkingIp;
+
   try {
     const response = await fetch('https://api.ipify.org?format=json');
     if (!response.ok) throw new Error('IP lookup failed');
@@ -129,12 +133,20 @@ async function showVisitorIp() {
   }
 }
 
+function markAppReady() {
+  document.body.classList.remove('app-loading');
+  document.body.classList.add('app-ready');
+}
+
 async function initialize() {
-  await loadComponents();
-  bindControls();
-  applyTheme(localStorage.getItem('keimirror-theme') || 'auto');
-  applyLanguage(detectInitialLanguage());
-  showVisitorIp();
+  try {
+    await loadComponents();
+    bindControls();
+    applyTheme(localStorage.getItem('keimirror-theme') || 'auto');
+    applyLanguage(detectInitialLanguage());
+  } finally {
+    markAppReady();
+  }
 }
 
 initialize().catch((error) => {
