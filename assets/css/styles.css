@@ -116,6 +116,9 @@ h1 { max-width: 780px; margin-bottom: 0; font-family: var(--font-serif); font-si
 .card p:last-child, .card ul:last-child, .card dl:last-child { margin-bottom: 0; }
 .content-block { padding-top: 1.25rem; margin-top: 1.25rem; border-top: 2px solid var(--text); }
 .content-block h3 { width: fit-content; margin-bottom: 0.55rem; padding: 0.15rem 0.45rem; background: var(--charcoal); color: #fbfcf8; font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; box-shadow: 0.22rem 0 0 var(--mustard); }
+.server-profile-grid { display: grid; gap: 1rem; margin-top: 1rem; }
+.server-spec { min-width: 0; }
+.server-spec h4 { width: fit-content; margin: 0 0 0.5rem; padding: 0.18rem 0.5rem; border: 2px solid var(--text); border-radius: var(--radius); background: var(--mustard); color: var(--ink); font-size: 0.78rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
 .info-table { display: block; width: 100%; max-width: 100%; margin-top: 0.85rem; border-collapse: separate; border-spacing: 0; overflow: hidden; border: 2px solid var(--text); border-radius: var(--radius); background: var(--surface-muted); }
 .info-table th, .info-table td { padding: 0.78rem 0.9rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
 .info-table tr:last-child th, .info-table tr:last-child td { border-bottom: 0; }
