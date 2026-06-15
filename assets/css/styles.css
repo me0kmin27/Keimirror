@@ -130,6 +130,16 @@ h1 { max-width: 780px; margin-bottom: 0; font-family: var(--font-serif); font-si
 .endpoint:nth-child(3) { background: color-mix(in srgb, var(--sage) 18%, var(--surface)); }
 .endpoint dt { color: var(--oxide); font-size: 0.76rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
 .endpoint dd { margin: 0; }
+
+.status-list, .thanks-list { display: grid; gap: 0.75rem; margin: 1rem 0 0; }
+.status-group, .thanks-list > div { display: grid; gap: 0.42rem; min-width: 0; padding: 0.92rem; border: 2px solid var(--text); border-radius: var(--radius); background: var(--surface-muted); }
+.status-group.official { background: color-mix(in srgb, var(--mustard) 22%, var(--surface)); }
+.status-group.community { background: color-mix(in srgb, var(--plum) 18%, var(--surface)); }
+.status-group dt, .thanks-list dt { color: var(--oxide); font-size: 0.76rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
+.status-group dd, .thanks-list dd { margin: 0; }
+.badge { display: inline-flex; align-items: center; width: fit-content; margin-right: 0.35rem; padding: 0.12rem 0.38rem; border: 1px solid var(--text); border-radius: 999px; background: var(--petrol); color: #fbfcf8; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+.thanks-card { background: linear-gradient(160deg, color-mix(in srgb, var(--petrol) 20%, var(--surface)), var(--surface) 48%, color-mix(in srgb, var(--mustard) 20%, var(--surface))); }
+.thanks-card .button { margin-top: 1rem; }
 .actions { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 1.15rem; }
 .button { display: inline-flex; align-items: center; justify-content: center; min-height: 2.35rem; padding: 0.54rem 0.78rem; border: 2px solid var(--text); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 0.84rem; font-weight: 850; text-decoration: none; text-transform: uppercase; letter-spacing: 0.04em; transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease; }
 .button.primary { background: var(--petrol); color: #fbfcf8; }
