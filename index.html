@@ -4,19 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Keimirror Mirrors</title>
-  <meta name="description" content="mirror.keiminem.com 및 mirror2.keiminem.com을 한 곳에서 연결하는 Keimirror 안내 페이지">
+  <meta name="description" content="mirror.keiminem.com, mirror2.keiminem.com, rsync.keiminem.com, rsync2.keiminem.com 접속 정보를 안내하는 Keimirror 허브 페이지">
   <style>
     :root {
       color-scheme: dark;
-      --bg: #10131a;
-      --panel: #171c26;
-      --panel-strong: #1f2633;
-      --text: #f5f7fb;
-      --muted: #b8c0ce;
-      --accent: #7dd3fc;
-      --accent-strong: #38bdf8;
-      --border: rgba(255, 255, 255, 0.12);
-      --shadow: rgba(0, 0, 0, 0.28);
+      --bg: #0b1020;
+      --panel: rgba(18, 24, 38, 0.86);
+      --panel-soft: rgba(30, 41, 59, 0.72);
+      --panel-strong: #1e293b;
+      --text: #f8fafc;
+      --muted: #b6c2d2;
+      --accent: #67e8f9;
+      --accent-strong: #22d3ee;
+      --accent-warm: #fbbf24;
+      --border: rgba(255, 255, 255, 0.14);
+      --shadow: rgba(0, 0, 0, 0.34);
     }
 
     * {
@@ -28,16 +30,21 @@
       min-height: 100vh;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background:
-        radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 32rem),
-        linear-gradient(135deg, #10131a 0%, #151927 100%);
+        radial-gradient(circle at 12% 8%, rgba(34, 211, 238, 0.22), transparent 30rem),
+        radial-gradient(circle at 88% 16%, rgba(251, 191, 36, 0.14), transparent 25rem),
+        linear-gradient(135deg, #0b1020 0%, #111827 52%, #0f172a 100%);
       color: var(--text);
-      line-height: 1.6;
+      line-height: 1.65;
+    }
+
+    a {
+      color: inherit;
     }
 
     main {
-      width: min(1080px, calc(100% - 2rem));
+      width: min(1180px, calc(100% - 2rem));
       margin: 0 auto;
-      padding: 5rem 0;
+      padding: 4.5rem 0;
     }
 
     .hero {
@@ -46,106 +53,178 @@
 
     .eyebrow {
       color: var(--accent);
-      font-weight: 700;
-      letter-spacing: 0.14em;
+      font-weight: 800;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
     }
 
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
     h1 {
-      margin: 0.5rem 0 1rem;
-      font-size: clamp(2.2rem, 7vw, 5rem);
-      line-height: 1.05;
+      margin-bottom: 1rem;
+      font-size: clamp(2.35rem, 7vw, 5.6rem);
+      line-height: 1.02;
+      letter-spacing: -0.05em;
     }
 
     .lead {
-      max-width: 760px;
-      margin: 0;
+      max-width: 820px;
+      margin-bottom: 0;
       color: var(--muted);
       font-size: clamp(1.05rem, 2vw, 1.35rem);
     }
 
-    .grid {
+    .layout {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1rem;
-      margin: 2rem 0;
+      grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.85fr);
+      gap: 1.25rem;
+      align-items: start;
     }
 
-    .card,
-    .notice {
-      border: 1px solid var(--border);
-      border-radius: 1.25rem;
-      background: rgba(23, 28, 38, 0.86);
-      box-shadow: 0 1.25rem 3rem var(--shadow);
-      backdrop-filter: blur(18px);
+    .column {
+      display: grid;
+      gap: 1.25rem;
     }
 
     .card {
-      display: flex;
-      flex-direction: column;
-      min-height: 260px;
-      padding: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 1.35rem;
+      background: var(--panel);
+      box-shadow: 0 1.25rem 3rem var(--shadow);
+      backdrop-filter: blur(18px);
+      padding: clamp(1.25rem, 3vw, 1.8rem);
+    }
+
+    .card.featured {
+      min-height: 310px;
+      background:
+        linear-gradient(135deg, rgba(103, 232, 249, 0.11), rgba(251, 191, 36, 0.07)),
+        var(--panel);
     }
 
     .card h2 {
-      margin: 0 0 0.5rem;
-      font-size: 1.6rem;
+      margin-bottom: 0.65rem;
+      font-size: clamp(1.35rem, 2vw, 1.9rem);
+      line-height: 1.2;
     }
 
     .card p {
-      margin: 0;
       color: var(--muted);
+    }
+
+    .card p:last-child,
+    .card ul:last-child,
+    .card dl:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .mini-card {
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      background: var(--panel-soft);
+      padding: 1rem;
+    }
+
+    .mini-card h3 {
+      margin-bottom: 0.35rem;
+      font-size: 1.05rem;
+    }
+
+    .mini-card p {
+      margin-bottom: 0;
+      font-size: 0.96rem;
+    }
+
+    .info-list {
+      display: grid;
+      gap: 0.85rem;
+      margin: 1rem 0 0;
+    }
+
+    .endpoint {
+      display: grid;
+      gap: 0.35rem;
+      padding: 0.95rem;
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      background: rgba(15, 23, 42, 0.72);
+    }
+
+    .endpoint dt {
+      color: var(--accent-warm);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .endpoint dd {
+      margin: 0;
+    }
+
+    code,
+    .domain {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
     .domain {
       display: inline-flex;
       width: fit-content;
-      margin: 1rem 0;
-      padding: 0.45rem 0.7rem;
-      border-radius: 999px;
+      padding: 0.38rem 0.58rem;
+      border-radius: 0.7rem;
       background: var(--panel-strong);
       color: var(--accent);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
+      word-break: break-all;
     }
 
     .actions {
-      margin-top: auto;
-      padding-top: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      margin-top: 1.1rem;
     }
 
-    a.button {
+    .button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 3rem;
-      padding: 0.75rem 1rem;
+      min-height: 2.85rem;
+      padding: 0.7rem 1rem;
       border-radius: 0.85rem;
       background: var(--accent-strong);
       color: #06121b;
-      font-weight: 800;
+      font-weight: 850;
       text-decoration: none;
       transition: transform 160ms ease, background 160ms ease;
     }
 
-    a.button:hover,
-    a.button:focus-visible {
+    .button.secondary {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text);
+    }
+
+    .button:hover,
+    .button:focus-visible {
       background: var(--accent);
       transform: translateY(-2px);
     }
 
-    .notice {
-      padding: 1.5rem;
-    }
-
-    .notice h2 {
-      margin: 0 0 0.75rem;
-    }
-
-    .notice ul {
-      margin: 0;
-      padding-left: 1.25rem;
-      color: var(--muted);
+    .button.secondary:hover,
+    .button.secondary:focus-visible {
+      background: rgba(255, 255, 255, 0.12);
     }
 
     footer {
@@ -154,12 +233,13 @@
       font-size: 0.95rem;
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 900px) {
       main {
         padding: 3rem 0;
       }
 
-      .grid {
+      .layout,
+      .section-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -169,38 +249,78 @@
   <main>
     <section class="hero" aria-labelledby="page-title">
       <div class="eyebrow">Keimirror</div>
-      <h1 id="page-title">Keiminem 미러 허브</h1>
-      <p class="lead">이 페이지는 별도 서버로 운영되는 두 미러의 기본 fancyindex 파일 목록으로 이동하기 위한 단일 HTML 안내 페이지입니다.</p>
+      <h1 id="page-title">Keiminem 미러 서비스</h1>
+      <p class="lead">Keimirror는 웹과 rsync 접속 정보를 한 곳에서 확인할 수 있도록 구성한 미러 안내 허브입니다. 왼쪽에는 서비스 소개와 운영 안내를, 오른쪽에는 바로 사용할 수 있는 서버 접속 정보를 정리했습니다.</p>
     </section>
 
-    <section class="grid" aria-label="미러 바로가기">
-      <article class="card">
-        <h2>미러 1</h2>
-        <p>기본 미러 서버입니다. fancyindex가 제공하는 디렉터리 목록으로 연결됩니다.</p>
-        <span class="domain">mirror.keiminem.com</span>
-        <div class="actions">
-          <a class="button" href="https://mirror.keiminem.com/">미러 1 열기</a>
-        </div>
-      </article>
+    <div class="layout">
+      <div class="column" aria-label="서버 소개 및 운영 안내">
+        <section class="card featured" aria-labelledby="intro-title">
+          <h2 id="intro-title">서버 소개</h2>
+          <p>Keiminem 미러는 패키지, 릴리스, 오픈소스 프로젝트 파일 등을 빠르게 내려받을 수 있도록 운영되는 공개 미러 서비스입니다. 방문자는 웹 브라우저에서 디렉터리 목록을 확인하거나, 자동화된 동기화 작업에는 rsync 엔드포인트를 사용할 수 있습니다.</p>
+          <p>각 미러 서버는 동일한 목적의 파일 목록을 제공하며, 사용자는 네트워크 상황이나 접근 방식에 맞춰 기본 미러와 보조 미러 중 하나를 선택할 수 있습니다.</p>
+          <div class="actions">
+            <a class="button" href="https://mirror.keiminem.com/">기본 미러 열기</a>
+            <a class="button secondary" href="https://mirror2.keiminem.com/">보조 미러 열기</a>
+          </div>
+        </section>
 
-      <article class="card">
-        <h2>미러 2</h2>
-        <p>보조 미러 서버입니다. 미러 1과 동일하게 fancyindex 기본 목록으로 연결됩니다.</p>
-        <span class="domain">mirror2.keiminem.com</span>
-        <div class="actions">
-          <a class="button" href="https://mirror2.keiminem.com/">미러 2 열기</a>
-        </div>
-      </article>
-    </section>
+        <section class="card" aria-labelledby="details-title">
+          <h2 id="details-title">운영 및 이용 안내</h2>
+          <div class="section-grid">
+            <article class="mini-card">
+              <h3>웹 접근</h3>
+              <p>HTTP와 HTTPS 주소를 통해 fancyindex 기반 디렉터리 목록을 확인하고 필요한 파일을 직접 받을 수 있습니다.</p>
+            </article>
+            <article class="mini-card">
+              <h3>rsync 동기화</h3>
+              <p>대량 파일 동기화나 자동화 스크립트에는 rsync 전용 주소를 사용하는 것을 권장합니다.</p>
+            </article>
+            <article class="mini-card">
+              <h3>이중 미러</h3>
+              <p>기본 미러와 보조 미러를 분리해 운영하므로 상황에 따라 접속 가능한 서버를 선택할 수 있습니다.</p>
+            </article>
+            <article class="mini-card">
+              <h3>상태 확인</h3>
+              <p>파일 목록과 최신 동기화 상태는 각 미러 서버의 디렉터리 페이지에서 확인해 주세요.</p>
+            </article>
+          </div>
+        </section>
+      </div>
 
-    <section class="notice" aria-labelledby="operation-title">
-      <h2 id="operation-title">운영 구조</h2>
-      <ul>
-        <li>웹서버는 이 HTML 허브 페이지를 제공합니다.</li>
-        <li>미러 1 서버는 <strong>mirror.keiminem.com</strong>에서 fancyindex 기본 리스트만 제공합니다.</li>
-        <li>미러 2 서버는 <strong>mirror2.keiminem.com</strong>에서 fancyindex 기본 리스트만 제공합니다.</li>
-      </ul>
-    </section>
+      <aside class="column" aria-label="서버 접속 정보">
+        <section class="card" aria-labelledby="server-info-title">
+          <h2 id="server-info-title">서버 정보</h2>
+          <p>아래 주소를 복사해 브라우저, 패키지 매니저, 동기화 도구 설정에 사용하세요.</p>
+          <dl class="info-list">
+            <div class="endpoint">
+              <dt>HTTP</dt>
+              <dd><span class="domain">http://mirror.keiminem.com/</span></dd>
+              <dd><span class="domain">http://mirror2.keiminem.com/</span></dd>
+            </div>
+            <div class="endpoint">
+              <dt>HTTPS</dt>
+              <dd><span class="domain">https://mirror.keiminem.com/</span></dd>
+              <dd><span class="domain">https://mirror2.keiminem.com/</span></dd>
+            </div>
+            <div class="endpoint">
+              <dt>RSYNC</dt>
+              <dd><span class="domain">rsync://rsync.keiminem.com/</span></dd>
+              <dd><span class="domain">rsync://rsync2.keiminem.com/</span></dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="card" aria-labelledby="quick-links-title">
+          <h2 id="quick-links-title">빠른 이동</h2>
+          <p>웹 미러 목록으로 바로 이동합니다.</p>
+          <div class="actions">
+            <a class="button" href="https://mirror.keiminem.com/">미러 1</a>
+            <a class="button secondary" href="https://mirror2.keiminem.com/">미러 2</a>
+          </div>
+        </section>
+      </aside>
+    </div>
 
     <footer>
       <p>각 미러의 파일 목록과 동기화 상태는 해당 미러 서버의 fancyindex 페이지에서 확인하세요.</p>
