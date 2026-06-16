@@ -2,6 +2,11 @@ import { translations } from './i18n.js';
 
 const root = document.documentElement;
 const themes = ['auto', 'light', 'dark'];
+const themeLabels = {
+  auto: '🌗 Auto',
+  light: '☀️ Light',
+  dark: '🌙 Dark',
+};
 
 const mirrorTargets = {
   mirror1: { url: 'https://mirror.keiminem.com/', titleKey: 'mirrorOneTitle' },
@@ -35,7 +40,10 @@ function applyTheme(theme) {
     root.dataset.theme = theme;
   }
 
-  if (themeToggle) themeToggle.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+  if (themeToggle) {
+    themeToggle.textContent = themeLabels[theme] || themeLabels.auto;
+    themeToggle.setAttribute('aria-label', `Change theme, current theme: ${theme}`);
+  }
   localStorage.setItem('keimirror-theme', theme);
 }
 
@@ -53,6 +61,26 @@ function applyLanguage(language) {
   localStorage.setItem('keimirror-language', language);
 }
 
+
+function hideMirrorList() {
+  const placeholder = document.querySelector('[data-mirror-placeholder]');
+  const mirrorList = document.querySelector('[data-mirror-list]');
+  const mirrorFrame = document.querySelector('[data-mirror-frame]');
+  const hero = mirrorList?.closest('.hero');
+
+  if (placeholder) placeholder.hidden = false;
+  if (mirrorList) {
+    mirrorList.hidden = true;
+    delete mirrorList.dataset.activeMirror;
+  }
+  if (mirrorFrame) mirrorFrame.removeAttribute('src');
+  hero?.classList.remove('is-showing-mirror-list');
+
+  document.querySelectorAll('[data-mirror-trigger]').forEach((trigger) => {
+    trigger.classList.remove('primary');
+    trigger.setAttribute('aria-pressed', 'false');
+  });
+}
 
 function showMirrorList(mirrorId) {
   const mirror = mirrorTargets[mirrorId];
@@ -105,6 +133,14 @@ function bindControls() {
     trigger.setAttribute('aria-pressed', 'false');
     trigger.addEventListener('click', (event) => {
       event.preventDefault();
+      const mirrorList = document.querySelector('[data-mirror-list]');
+      const isActive = mirrorList?.dataset.activeMirror === trigger.dataset.mirrorTrigger && !mirrorList.hidden;
+
+      if (isActive) {
+        hideMirrorList();
+        return;
+      }
+
       showMirrorList(trigger.dataset.mirrorTrigger);
     });
   });
