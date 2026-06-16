@@ -2,11 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://mirror.keiminem.com/</loc>
-    <lastmod>2026-06-15</lastmod>
+    <loc>https://keiminem.com/</loc>
+    <lastmod>2026-06-16</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://mirror.keiminem.com/" />
-    <xhtml:link rel="alternate" hreflang="ko" href="https://mirror.keiminem.com/?lang=ko" />
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://keiminem.com/" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://keiminem.com/?lang=ko" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://keiminem.com/" />
   </url>
 </urlset>

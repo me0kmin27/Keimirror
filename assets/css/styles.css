@@ -162,6 +162,11 @@ h1 { max-width: 780px; margin-bottom: 0; font-family: var(--font-serif); font-si
 .button:hover, .button:focus-visible { background: var(--mustard); color: var(--ink); transform: translate(-1px, -1px); box-shadow: 0.18rem 0.18rem 0 var(--text); }
 .button.primary:hover, .button.primary:focus-visible { background: var(--oxide); color: #fbfcf8; }
 .theme-toggle { cursor: pointer; }
+.contact-block { border-top-style: dashed; }
+.footer-notice { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 1rem; width: 100%; height: fit-content; margin-top: 1rem; background: linear-gradient(135deg, color-mix(in srgb, var(--mustard) 20%, var(--surface)), var(--surface) 44%, color-mix(in srgb, var(--petrol) 14%, var(--surface))); }
+.footer-notice-logo { align-self: start; padding: 0.25rem 0.35rem 0.25rem 0; }
+.footer-notice-copy h2 { margin-bottom: 0.45rem; font-family: var(--font-serif); font-size: clamp(1.4rem, 2.6vw, 2.1rem); line-height: 1; letter-spacing: -0.04em; }
+.footer-notice-copy p { margin-bottom: 0.35rem; color: var(--muted); }
 footer { margin-top: 2rem; padding-top: 1.25rem; border-top: 3px solid var(--text); color: var(--muted); font-size: 0.92rem; }
 @media (max-width: 1080px) {
   .hero { grid-template-columns: minmax(0, 1fr) minmax(min(15rem, 100%), 0.42fr); }
@@ -181,6 +186,7 @@ footer { margin-top: 2rem; padding-top: 1.25rem; border-top: 3px solid var(--tex
 }
 
 @media (max-width: 560px) {
+  .footer-notice { grid-template-columns: 1fr; }
   .site-shell { width: min(100% - 1rem, 1180px); }
   .topbar-inner, .hero, .card { overflow-wrap: anywhere; }
   .nav-actions { width: 100%; }
