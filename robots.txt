@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mirror.keiminem.com/sitemap.xml
+Sitemap: https://keiminem.com/sitemap.xml
+Host: keiminem.com
