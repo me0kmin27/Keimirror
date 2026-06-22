@@ -173,6 +173,19 @@ h1 { max-width: 780px; margin-bottom: 0; font-family: var(--font-serif); font-si
 .footer-notice-logo { align-self: start; padding: 0.25rem 0.35rem 0.25rem 0; }
 .footer-notice-copy h2 { margin-bottom: 0.45rem; font-family: var(--font-serif); font-size: clamp(1.4rem, 2.6vw, 2.1rem); line-height: 1; letter-spacing: -0.04em; }
 .footer-notice-copy p { margin-bottom: 0.35rem; color: var(--muted); }
+
+.donate-toggle { background: var(--mustard); color: var(--ink); }
+.sponsor-button-frame { display: inline-flex; width: fit-content; max-width: 100%; margin-top: 0.75rem; padding: 0.28rem; border: 2px solid var(--text); border-radius: var(--radius); background: var(--surface); }
+.sponsor-button-frame iframe { display: block; max-width: 100%; }
+.sponsor-modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 1rem; }
+.sponsor-modal[hidden] { display: none; }
+.sponsor-modal-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.58); backdrop-filter: blur(4px); }
+.sponsor-modal-dialog { position: relative; z-index: 1; width: min(100%, 42rem); max-height: min(90vh, 36rem); overflow: auto; padding: clamp(1.2rem, 4vw, 2rem); border: 2px solid var(--text); border-radius: var(--radius); background: var(--surface); box-shadow: 0.85rem 0.85rem 0 rgba(0, 0, 0, 0.28); }
+.sponsor-modal-dialog h2 { margin-right: 3rem; margin-bottom: 0.5rem; font-family: var(--font-serif); font-size: clamp(1.6rem, 4vw, 2.4rem); line-height: 1; letter-spacing: -0.04em; }
+.sponsor-modal-dialog p { color: var(--muted); }
+.sponsor-modal-close { position: absolute; top: 0.75rem; right: 0.75rem; min-width: 2.5rem; padding: 0.3rem 0.68rem; font-size: 1.35rem; line-height: 1; cursor: pointer; }
+.sponsor-card-frame { width: 100%; overflow-x: auto; margin-top: 1rem; padding: 0.45rem; border: 2px dashed var(--border); border-radius: var(--radius); background: var(--bone); }
+.sponsor-card-frame iframe { display: block; width: min(600px, 100%); max-width: 100%; margin: 0 auto; }
 footer { margin-top: 2rem; padding-top: 1.25rem; border-top: 3px solid var(--text); color: var(--muted); font-size: 0.92rem; }
 @media (max-width: 1080px) {
   .hero { grid-template-columns: minmax(0, 1fr) minmax(min(15rem, 100%), 0.42fr); }
