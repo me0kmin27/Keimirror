@@ -1,6 +1,6 @@
 export const translations = {
   en: {
-    navMirror1: 'Mirror 1', navMirror2: 'Mirror 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
+    navDonate: 'Donate', navMirror1: 'Mirror 1', navMirror2: 'Mirror 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
     mirrorListEyebrow: 'Directory list', mirrorListTitle: 'Select a mirror', mirrorListOpenNew: 'Open in new tab',
     heroTitle: 'Keiverse Public Mirror', heroLead: 'A fast public mirror for open-source software repositories, operated by Keiverse from South Korea.',
     welcomeTitle: 'Welcome to Keimirror',
@@ -23,13 +23,14 @@ export const translations = {
     footerText: "© Keiverse. Keimirror is operated as part of the Keiverse open-source mirror infrastructure.",
     footerNoticeTitle: 'Keiverse Mirror Network',
     footerNoticeKrfoss: 'Participating mirror of krfoss, supporting public access to open-source software in Korea.',
+    sponsorModalTitle: 'Support Keimirror', sponsorModalBody: 'Your sponsorship helps keep the public mirror infrastructure available.',
     projectStatusTitle: 'Mirrored project status', projectStatusBody: 'Official and community mirror coverage at a glance.',
     officialMirrorsTitle: 'Official mirrors', communityMirrorsTitle: 'Community mirrors', tierOneBadge: 'Tier 1',
     elivThanksTitle: 'Special Thanks to Eliv', elivThanksBody: 'Eliv sponsors CDN support that helps Keiverse mitigate DDoS attacks and keep the mirror service stable.',
     sponsorLabel: 'Sponsor', contributionLabel: 'Contribution', elivContribution: 'CDN service for DDoS mitigation', visitEliv: 'Visit Eliv'
   },
   ko: {
-    navMirror1: '미러 1', navMirror2: '미러 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
+    navDonate: '후원', navMirror1: '미러 1', navMirror2: '미러 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
     mirrorListEyebrow: '디렉터리 목록', mirrorListTitle: '미러를 선택하세요', mirrorListOpenNew: '새 탭에서 열기',
     heroTitle: 'Keiverse 공개 미러', heroLead: 'Keiverse가 대한민국에서 운영하는 빠른 오픈소스 소프트웨어 저장소용 공개 미러입니다.',
     welcomeTitle: 'Keimirror에 오신 것을 환영합니다',
@@ -52,6 +53,7 @@ export const translations = {
     footerText: '© Keiverse. Keimirror는 Keiverse 오픈소스 미러 인프라의 일부로 운영됩니다.',
     footerNoticeTitle: 'Keiverse 미러 네트워크',
     footerNoticeKrfoss: 'krfoss 참여 미러로서 국내 오픈소스 소프트웨어 접근성을 지원합니다.',
+    sponsorModalTitle: 'Keimirror 후원하기', sponsorModalBody: '후원은 공개 미러 인프라를 안정적으로 운영하는 데 도움이 됩니다.',
     projectStatusTitle: '미러 프로젝트 현황', projectStatusBody: '공식 미러와 커뮤니티 미러의 지원 범위를 한눈에 볼 수 있도록 정리했습니다.',
     officialMirrorsTitle: '공식 미러', communityMirrorsTitle: '커뮤니티 미러', tierOneBadge: '티어 1',
     elivThanksTitle: 'Eliv에 특별한 감사를 전합니다', elivThanksBody: 'Eliv는 Keiverse가 DDoS 공격을 완화하고 미러 서비스를 안정적으로 유지할 수 있도록 CDN 서비스를 후원합니다.',

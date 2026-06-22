@@ -113,6 +113,27 @@ function showMirrorList(mirrorId) {
   });
 }
 
+
+function setSponsorPopup(open) {
+  const sponsorModal = document.querySelector('[data-sponsor-modal]');
+  const sponsorDialog = sponsorModal?.querySelector('.sponsor-modal-dialog');
+
+  if (!sponsorModal) return;
+
+  sponsorModal.hidden = !open;
+  document.querySelectorAll('[data-sponsor-toggle]').forEach((trigger) => {
+    trigger.classList.toggle('primary', open);
+    trigger.setAttribute('aria-expanded', String(open));
+  });
+
+  if (open) sponsorDialog?.focus();
+}
+
+function toggleSponsorPopup() {
+  const sponsorModal = document.querySelector('[data-sponsor-modal]');
+  setSponsorPopup(Boolean(sponsorModal?.hidden));
+}
+
 function bindControls() {
   document.getElementById('theme-toggle')?.addEventListener('click', () => {
     const current = localStorage.getItem('keimirror-theme') || 'auto';
@@ -143,6 +164,18 @@ function bindControls() {
 
       showMirrorList(trigger.dataset.mirrorTrigger);
     });
+  });
+
+  document.querySelectorAll('[data-sponsor-toggle]').forEach((trigger) => {
+    trigger.addEventListener('click', toggleSponsorPopup);
+  });
+
+  document.querySelectorAll('[data-sponsor-close]').forEach((trigger) => {
+    trigger.addEventListener('click', () => setSponsorPopup(false));
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setSponsorPopup(false);
   });
 
   document.getElementById('visitor-ip-check')?.addEventListener('click', showVisitorIp);
