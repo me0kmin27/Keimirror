@@ -5,7 +5,7 @@ on:
 
 jobs:
   test-ssh:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: keimirror
 
     steps:
