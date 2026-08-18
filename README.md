@@ -10,7 +10,7 @@ Keimirror는 Keiverse가 대한민국 구미에서 운영하는 공개 오픈소
 - 한국어와 영어 UI를 지원하며, `?lang=ko` 쿼리 또는 언어 전환 버튼으로 표시 언어를 바꿀 수 있습니다.
 - 자동, 라이트, 다크 테마 전환, 접속자 IP 확인, GitHub Sponsors 후원 안내 기능을 제공합니다.
 - 검색 엔진 수집을 위한 메타 태그, canonical, hreflang, JSON-LD, `robots.txt`, `sitemap.xml`, 파비콘 세트를 포함합니다.
-- PR 병합 시 self-hosted runner에서 rsync로 운영 서버에 배포하는 GitHub Actions 워크플로를 포함합니다.
+- PR 병합 시 또는 수동 실행 시 GitHub-hosted runner에서 rsync로 운영 서버에 배포하는 GitHub Actions 워크플로를 포함합니다.
 
 ## 운영 목표
 
@@ -30,7 +30,7 @@ Keimirror는 Keiverse가 대한민국 구미에서 운영하는 공개 오픈소
 - **운영 정보 카드**: 환영 문구, 면책 조항, 문의, 서버 프로필, 미러 접속 정보, 프로젝트 현황, Eliv 후원 감사, GitHub Sponsors 후원 안내를 카드 단위로 제공합니다.
 - **후원 CTA**: 헤더 Donate 버튼과 푸터 후원 링크를 통해 GitHub Sponsors 팝업 및 후원 페이지로 연결합니다.
 - **SEO 기본 구성**: Open Graph, Twitter Card, JSON-LD, canonical, hreflang, sitemap, robots 설정을 포함합니다.
-- **배포 자동화**: PR이 `main` 브랜치에 병합되면 self-hosted runner가 SSH 키를 준비하고 rsync로 운영 경로를 동기화합니다.
+- **배포 자동화**: PR이 `main` 브랜치에 병합되면 GitHub-hosted runner가 SSH 키를 준비하고 rsync로 운영 경로를 동기화하며, 필요할 때 Actions 화면에서 현재 `main`을 즉시 수동 배포할 수도 있습니다.
 
 ## 파일 구성
 
@@ -59,7 +59,7 @@ Keimirror는 Keiverse가 대한민국 구미에서 운영하는 공개 오픈소
 ```
 
 - `.github/FUNDING.yml`: GitHub Sponsors 계정 정보를 제공해 저장소 후원 버튼을 활성화합니다.
-- `.github/workflows/deploy-on-pr-merge.yml`: `main` 대상 PR 병합 완료 시 self-hosted runner에서 운영 서버로 정적 파일을 rsync 배포합니다.
+- `.github/workflows/deploy-on-pr-merge.yml`: `main` 대상 PR 병합 완료 시 또는 수동 실행 시 GitHub-hosted runner에서 운영 서버로 정적 파일을 rsync 배포합니다.
 - `.github/workflows/Test SSH Connection.yml`: 배포용 SSH 시크릿과 원격 경로 접근성을 수동으로 점검하는 워크플로입니다.
 - `index.html`: 메타데이터, SEO 태그, 전역 스크립트와 섹션 컴포넌트 자리 표시자를 관리하는 진입 HTML입니다.
 - `assets/css/styles.css`: 사이트 전체 스타일, 반응형 레이아웃, 테마별 색상, 카드 UI, 미러 iframe 영역을 관리합니다.
@@ -132,6 +132,7 @@ Keimirror는 Keiverse가 대한민국 구미에서 운영하는 공개 오픈소
 7. 미러 2 서버는 `mirror2.keiminem.com` 도메인에서 fancyindex 기반 기본 디렉터리 목록을 제공합니다.
 8. HTTP, HTTPS, rsync 엔드포인트와 CDN 캐싱 정책이 운영 의도와 일치하는지 확인합니다.
 9. GitHub Actions 배포를 사용할 경우 `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER`, `DEPLOY_PATH` 시크릿을 설정하고, 필요 시 `Test SSH Connection` 워크플로로 연결을 먼저 확인합니다.
+10. 현재 `main`의 내용을 즉시 반영하려면 Actions의 `Deploy on PR Merge` 워크플로에서 `Run workflow`를 실행합니다.
 
 ## 로컬 확인
 
@@ -156,12 +157,17 @@ python3 -m http.server 8000
 
 앞으로의 변경 작업은 이 섹션에 날짜별로 기록합니다.
 
+### 2026-08-18
+
+1. PR 병합을 기다리지 않고 현재 `main`의 정적 사이트를 운영 서버에 반영할 수 있도록 배포 워크플로에 수동 실행 기능을 추가했습니다.
+2. 자동 배포와 수동 배포 모두 동일한 검증된 SSH 및 rsync 단계를 사용하도록 구성했습니다.
+
 ### 2026-06-29
 
 1. GitHub Sponsors 후원 CTA를 README의 현재 상태, 주요 기능, 컴포넌트 구조, 로컬 확인 항목에 반영했습니다.
 2. iframe 기반 후원 위젯 대신 저장소 네이티브 버튼, 헤더 Donate 버튼, 푸터 후원 링크, 모달형 후원 안내로 구성된 현재 UI를 문서화했습니다.
 3. `.github/FUNDING.yml`과 배포/SSH 점검 GitHub Actions 워크플로를 파일 구성 및 배포 절차에 추가했습니다.
-4. PR 병합 후 self-hosted runner가 SSH와 rsync로 운영 서버를 동기화하는 배포 흐름과 필요한 시크릿을 명시했습니다.
+4. PR 병합 후 GitHub-hosted runner가 SSH와 rsync로 운영 서버를 동기화하는 배포 흐름과 필요한 시크릿을 명시했습니다.
 
 ### 2026-06-19
 
