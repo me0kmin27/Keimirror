@@ -46,6 +46,12 @@ jobs:
             --exclude ".git" \
             --exclude ".github" \
             --exclude "node_modules" \
+            --exclude "tests" \
+            --exclude "test-results" \
+            --exclude "playwright-report" \
+            --exclude "playwright.config.js" \
+            --exclude "package.json" \
+            --exclude "package-lock.json" \
             -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.DEPLOY_PORT }}" \
             ./ \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
