@@ -1,6 +1,6 @@
 export const translations = {
   en: {
-    navDonate: 'Donate', navMirror1: 'Mirror 1', navMirror2: 'Mirror 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
+    navDonate: 'Donate', navServerStatus: 'Server status', navMirror1: 'Mirror 1', navMirror2: 'Mirror 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
     mirrorListEyebrow: 'Directory list', mirrorListTitle: 'Select a mirror', mirrorListOpenNew: 'Open in new tab',
     heroTitle: 'Keiverse Public Mirror', heroLead: 'A fast public mirror for open-source software repositories, operated by Keiverse from South Korea.',
     welcomeTitle: 'Welcome to Keimirror',
@@ -30,7 +30,7 @@ export const translations = {
     sponsorLabel: 'Sponsor', contributionLabel: 'Contribution', elivContribution: 'CDN service for DDoS mitigation', visitEliv: 'Visit Eliv'
   },
   ko: {
-    navDonate: '후원', navMirror1: '미러 1', navMirror2: '미러 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
+    navDonate: '후원', navServerStatus: '서버상태', navMirror1: '미러 1', navMirror2: '미러 2', navKeiverse: 'Keiverse', eyebrow: 'Keimirror',
     mirrorListEyebrow: '디렉터리 목록', mirrorListTitle: '미러를 선택하세요', mirrorListOpenNew: '새 탭에서 열기',
     heroTitle: 'Keiverse 공개 미러', heroLead: 'Keiverse가 대한민국에서 운영하는 빠른 오픈소스 소프트웨어 저장소용 공개 미러입니다.',
     welcomeTitle: 'Keimirror에 오신 것을 환영합니다',
