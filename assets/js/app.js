@@ -2,6 +2,22 @@ import { translations } from './i18n.js';
 
 const root = document.documentElement;
 const themes = ['auto', 'light', 'dark'];
+
+function readPreference(key, fallback) {
+  try {
+    return localStorage.getItem(key) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function savePreference(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Storage may be blocked or full; the current page still works.
+  }
+}
 const themeLabels = {
   auto: '🌗 Auto',
   light: '☀️ Light',
@@ -32,6 +48,7 @@ async function loadComponents() {
 }
 
 function applyTheme(theme) {
+  if (!themes.includes(theme)) theme = 'auto';
   const themeToggle = document.getElementById('theme-toggle');
 
   if (theme === 'auto') {
@@ -44,10 +61,11 @@ function applyTheme(theme) {
     themeToggle.textContent = themeLabels[theme] || themeLabels.auto;
     themeToggle.setAttribute('aria-label', `Change theme, current theme: ${theme}`);
   }
-  localStorage.setItem('keimirror-theme', theme);
+  savePreference('keimirror-theme', theme);
 }
 
 function applyLanguage(language) {
+  if (!['en', 'ko'].includes(language)) language = 'en';
   const languageToggle = document.getElementById('language-toggle');
   const dictionary = translations[language] || translations.en;
 
@@ -58,7 +76,7 @@ function applyLanguage(language) {
   });
 
   if (languageToggle) languageToggle.textContent = language === 'en' ? '한국어' : 'English';
-  localStorage.setItem('keimirror-language', language);
+  savePreference('keimirror-language', language);
 }
 
 
@@ -136,12 +154,12 @@ function toggleSponsorPopup() {
 
 function bindControls() {
   document.getElementById('theme-toggle')?.addEventListener('click', () => {
-    const current = localStorage.getItem('keimirror-theme') || 'auto';
+    const current = root.dataset.theme || 'auto';
     applyTheme(themes[(themes.indexOf(current) + 1) % themes.length]);
   });
 
   document.getElementById('language-toggle')?.addEventListener('click', () => {
-    const current = localStorage.getItem('keimirror-language') || 'en';
+    const current = root.lang;
     const nextLanguage = current === 'en' ? 'ko' : 'en';
     applyLanguage(nextLanguage);
 
@@ -183,7 +201,7 @@ function bindControls() {
 
 function detectInitialLanguage() {
   const queryLanguage = new URLSearchParams(window.location.search).get('lang');
-  return queryLanguage === 'ko' ? 'ko' : (localStorage.getItem('keimirror-language') || 'en');
+  return queryLanguage === 'ko' ? 'ko' : readPreference('keimirror-language', 'en');
 }
 
 async function showVisitorIp() {
@@ -211,7 +229,7 @@ async function initialize() {
   try {
     await loadComponents();
     bindControls();
-    applyTheme(localStorage.getItem('keimirror-theme') || 'auto');
+    applyTheme(readPreference('keimirror-theme', 'auto'));
     applyLanguage(detectInitialLanguage());
   } finally {
     markAppReady();

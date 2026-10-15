@@ -134,6 +134,25 @@ Keimirror는 Keiverse가 대한민국 구미에서 운영하는 공개 오픈소
 9. GitHub Actions 배포를 사용할 경우 `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER`, `DEPLOY_PATH` 시크릿을 설정하고, 필요 시 `Test SSH Connection` 워크플로로 연결을 먼저 확인합니다.
 10. 현재 `main`의 내용을 즉시 반영하려면 Actions의 `Deploy on PR Merge` 워크플로에서 `Run workflow`를 실행합니다.
 
+## 자동 회귀 테스트
+
+Node.js 22와 Python 3가 필요합니다. 사이트 자체에는 Node.js나 빌드 과정이 필요하지 않습니다.
+
+```bash
+npm ci
+npx playwright install chromium
+npm test
+```
+
+Playwright가 `127.0.0.1:18763`에 테스트 전용 정적 서버를 시작하고 Chromium에서 실제 페이지와 중첩 컴포넌트를 로드합니다. 이미 사용 중인 포트는 재사용하지 않고 실패합니다. Linux CI에서는 `npx playwright install --with-deps chromium`으로 시스템 의존성도 설치합니다.
+
+- 저장소 접근 자체 및 `getItem` 차단, `setItem` 용량 초과 상황에서도 초기화와 언어/테마 반복 전환을 검증합니다.
+- 저장소 사용이 불가능하면 현재 페이지의 선택은 유지되지만 새로고침 후 보존은 보장하지 않습니다. 정상 환경에서는 기존과 같이 저장합니다.
+- 지원하지 않는 저장 값은 영어와 자동 테마로 복구하며, `?lang=ko` 우선순위는 유지합니다.
+- 정상 저장/새로고침과 미러 미리보기, 후원 팝업도 검증합니다. 미러 응답은 로컬 테스트 fixture이며 외부 미러 가용성을 검증하지 않습니다.
+- `.github/workflows/test.yml`은 PR 및 `main` push에서 브라우저 테스트를 실행합니다. 시크릿이나 배포 권한은 사용하지 않습니다.
+- 기존 병합/수동 rsync 배포 트리거는 유지합니다. 테스트·의존성·테스트 결과 파일은 업로드에서 제외합니다. CI는 배포 워크플로의 선행 조건으로 연결되어 있지 않으므로 병합 전 `browser-tests` 성공을 확인해야 합니다.
+
 ## 로컬 확인
 
 브라우저에서 `file://`로 접근하면 컴포넌트 `fetch()`가 제한될 수 있으므로 로컬 정적 서버로 확인합니다.
