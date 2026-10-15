@@ -28,6 +28,7 @@ Keimirror는 Keiverse가 대한민국 구미에서 운영하는 공개 오픈소
 - **테마 전환**: 자동, 라이트, 다크 테마를 순환하며 사용자의 선택을 `localStorage`에 저장합니다.
 - **접속자 IP 확인**: 사용자가 버튼을 누를 때 `api.ipify.org`를 호출해 현재 클라이언트 IP를 표시합니다.
 - **운영 정보 카드**: 환영 문구, 면책 조항, 문의, 서버 프로필, 미러 접속 정보, 프로젝트 현황, Eliv 후원 감사, GitHub Sponsors 후원 안내를 카드 단위로 제공합니다.
+- **서버상태**: 헤더 Donate 바로 옆의 `서버상태` / `Server status` 버튼이 기존 Grafana 공개 대시보드 `https://grafana.keiminem.com/public-dashboards/32d4cf1d87a24a31b5540995402ab6ee`를 새 탭으로 엽니다 (`rel="noopener noreferrer"`). Grafana 로그인이나 설정 변경 없이 공개 링크만 사용합니다.
 - **후원 CTA**: 헤더 Donate 버튼과 푸터 후원 링크를 통해 GitHub Sponsors 팝업 및 후원 페이지로 연결합니다.
 - **SEO 기본 구성**: Open Graph, Twitter Card, JSON-LD, canonical, hreflang, sitemap, robots 설정을 포함합니다.
 - **배포 자동화**: PR이 `main` 브랜치에 병합되면 GitHub-hosted runner가 SSH 키를 준비하고 rsync로 운영 경로를 동기화하며, 필요할 때 Actions 화면에서 현재 `main`을 즉시 수동 배포할 수도 있습니다.
@@ -81,7 +82,7 @@ Keimirror는 Keiverse가 대한민국 구미에서 운영하는 공개 오픈소
 현재 레이아웃 흐름은 다음과 같습니다.
 
 1. `components/sections/header.html`
-   - 로고, 미러 1/2 버튼, Donate 버튼, 언어 전환, 테마 전환을 제공합니다.
+   - 로고, 미러 1/2 버튼, Donate 버튼, 서버상태 링크, 언어 전환, 테마 전환을 제공합니다.
 2. `components/sections/hero.html`
    - 서비스 제목, 설명, 미러 디렉터리 iframe 패널을 제공합니다.
 3. `components/sections/overview.html`
@@ -149,6 +150,7 @@ Playwright가 `127.0.0.1:18763`에 테스트 전용 정적 서버를 시작하�
 - 저장소 접근 자체 및 `getItem` 차단, `setItem` 용량 초과 상황에서도 초기화와 언어/테마 반복 전환을 검증합니다.
 - 저장소 사용이 불가능하면 현재 페이지의 선택은 유지되지만 새로고침 후 보존은 보장하지 않습니다. 정상 환경에서는 기존과 같이 저장합니다.
 - 지원하지 않는 저장 값은 영어와 자동 테마로 복구하며, `?lang=ko` 우선순위는 유지합니다.
+- 서버상태 링크는 데스크톱 및 375px/320px 모바일에서 Donate 바로 옆 배치, 정확한 공개 URL, 안전한 새 탭 열기와 한국어/영어 전환을 실제 Chromium으로 검증합니다. CI의 Grafana 응답은 로컬 fixture이며 공개 대시보드의 실시간 가용성 검사는 아닙니다.
 - 정상 저장/새로고침과 미러 미리보기, 후원 팝업도 검증합니다. 미러 응답은 로컬 테스트 fixture이며 외부 미러 가용성을 검증하지 않습니다.
 - `.github/workflows/test.yml`은 PR 및 `main` push에서 브라우저 테스트를 실행합니다. 시크릿이나 배포 권한은 사용하지 않습니다.
 - 기존 병합/수동 rsync 배포 트리거는 유지합니다. 테스트·의존성·테스트 결과 파일은 업로드에서 제외합니다. CI는 배포 워크플로의 선행 조건으로 연결되어 있지 않으므로 병합 전 `browser-tests` 성공을 확인해야 합니다.
