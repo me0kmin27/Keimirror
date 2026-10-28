@@ -98,7 +98,7 @@ export function renderTelemetry() {
         : telemetryNeedsFresh || (!snapshot && ['idle', 'loading'].includes(telemetryFetchState)) ? 'loading'
         : !snapshot ? 'offline'
         : telemetryFetchState === 'failure' || !mirror.available
-          || !telemetryRecent(snapshot.collected_at, now) || !telemetryRecent(telemetryData.generated_at, now) ? 'stale' : 'live';
+          || !telemetryRecent(snapshot.collected_at, now) || !telemetryRecent(telemetryData.generated_at, now, 5, 30) ? 'stale' : 'live';
       cell.dataset.freshness = freshness;
       cell.dataset.syncState = freshness === 'live' ? project.state : 'unknown';
       cell.querySelector('[data-sync-state]').textContent = freshness === 'live'
@@ -119,9 +119,9 @@ export function renderTelemetry() {
   }
 }
 
-// Legacy interval metadata never extends live freshness. Allow only 1s clock skew.
-function telemetryRecent(timestamp, now, maxAge = 5) {
-  return timestamp !== null && timestamp !== undefined && now - timestamp <= maxAge && timestamp - now <= 1;
+// Legacy metadata never extends freshness. Only the aggregate envelope allows 30s future skew.
+function telemetryRecent(timestamp, now, maxAge = 5, maxFuture = 1) {
+  return timestamp !== null && timestamp !== undefined && now - timestamp <= maxAge && timestamp - now <= maxFuture;
 }
 
 let telemetryStarted = false;

@@ -61,6 +61,28 @@ for (const [refresh, interval] of [[1, 1], [15, 15], [1, 15], [15, 1]]) {
   });
 }
 
+test('two second future aggregate stays live without extending source or rate freshness', async ({ page }) => {
+  const data = payload();
+  data.generated_at = NOW + 2;
+  Object.assign(data.mirrors.mirror1.snapshot.projects.archlinux, {
+    sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW,
+  });
+  await page.clock.install({ time: new Date(NOW * 1000) });
+  await page.clock.pauseAt(new Date(NOW * 1000));
+  await page.route(ENDPOINT, route => route.fulfill({ json: data }));
+  await page.goto('/?lang=en');
+  await expect(cell(page)).toHaveAttribute('data-freshness', 'live', { timeout: 500 });
+  await expect(cell(page).locator('[data-sync-rx]')).toHaveText('2 KiB/s', { timeout: 500 });
+  await expect(cell(page).locator('[data-sync-tx]')).toHaveText('0 B/s', { timeout: 500 });
+  await page.clock.runFor(4000);
+  await expect(cell(page)).toHaveAttribute('data-freshness', 'live', { timeout: 500 });
+  await expect(cell(page).locator('[data-sync-rx]')).toHaveText('—', { timeout: 500 });
+  await expect(cell(page).locator('[data-sync-tx]')).toHaveText('—', { timeout: 500 });
+  await page.clock.runFor(2000);
+  await expect(cell(page)).toHaveAttribute('data-freshness', 'stale', { timeout: 500 });
+  await expect(cell(page).locator('[data-disk-usage]')).toHaveText('1 GiB', { timeout: 500 });
+});
+
 test('exact freshness boundaries clear rates during a stalled poll without losing stored size', async ({ page }) => {
   const data = payload();
   Object.assign(data.mirrors.mirror1.snapshot.projects.archlinux, {
@@ -319,7 +341,7 @@ for (const [reason, change] of [
   ['six second old snapshot', d => { d.mirrors.mirror1.snapshot.collected_at = NOW - 6; }],
   ['six second old aggregate', d => { d.generated_at = NOW - 6; }],
   ['two second future snapshot', d => { d.mirrors.mirror1.snapshot.collected_at = NOW + 2; }],
-  ['two second future aggregate', d => { d.generated_at = NOW + 2; }],
+  ['thirty-one second future aggregate', d => { d.generated_at = NOW + 31; }],
   ['old snapshot', d => { d.mirrors.mirror1.snapshot.collected_at = NOW - 61; }],
   ['future snapshot', d => { d.mirrors.mirror1.snapshot.collected_at = NOW + 31; }],
   ['failed aggregator fetch with retained snapshot', d => { d.mirrors.mirror1.available = false; }],

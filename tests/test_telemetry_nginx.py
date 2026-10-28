@@ -4,6 +4,9 @@ import json
 from pathlib import Path
 import re
 import shutil
+import socket
+import time
+import urllib.request
 import subprocess
 import tempfile
 import unittest
@@ -118,6 +121,57 @@ class NginxSnippetTests(unittest.TestCase):
             result = subprocess.run([nginx, "-t", "-p", temporary + "/", "-c", str(directory / "nginx.conf")],
                                     capture_output=True, text=True, timeout=15)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+    def test_atomic_snapshot_replacement_bypasses_inherited_open_file_cache(self):
+        nginx = shutil.which('nginx')
+        if not nginx:
+            self.skipTest('nginx unavailable')
+        for name, endpoint, filename in (
+                ('nginx-mirror-location.conf', '/.well-known/keimirror-status.json', 'snapshot.json'),
+                ('nginx-home-location.conf', '/status/mirrors.json', 'mirrors.json')):
+            with self.subTest(snippet=name), tempfile.TemporaryDirectory(prefix='telemetry-cache-') as temporary:
+                directory = Path(temporary)
+                with socket.socket() as listener:
+                    listener.bind(('127.0.0.1', 0))
+                    port = listener.getsockname()[1]
+                snippet = self.snippet(name).replace('/var/lib/keimirror-telemetry/public', temporary)
+                config = ('daemon off; master_process off;\n'
+                          f'pid {temporary}/nginx.pid; error_log stderr crit;\n'
+                          'events { worker_connections 16; }\nhttp { access_log off;\n'
+                          'open_file_cache max=10 inactive=30s; open_file_cache_valid 30s;\n'
+                          'open_file_cache_min_uses 1;\n'
+                          f'server {{ listen 127.0.0.1:{port}; {snippet} }} }}\n')
+                config_path = directory / 'nginx.conf'
+                config_path.write_text(config)
+                target = directory / filename
+                target.write_text('{"generation":1}')
+                process = subprocess.Popen([nginx, '-p', temporary+'/', '-c', str(config_path)],
+                                           stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                try:
+                    url = f'http://127.0.0.1:{port}{endpoint}'
+                    deadline = time.monotonic()+3
+                    while True:
+                        try:
+                            with urllib.request.urlopen(url, timeout=.5) as response:
+                                self.assertEqual(json.load(response)['generation'], 1)
+                            break
+                        except OSError:
+                            if time.monotonic() >= deadline:
+                                raise
+                            time.sleep(.02)
+                    replacement = directory / 'replacement.json'
+                    replacement.write_text('{"generation":2}')
+                    replacement.replace(target)
+                    with urllib.request.urlopen(url, timeout=1) as response:
+                        self.assertEqual(json.load(response)['generation'], 2)
+                finally:
+                    process.terminate()
+                    try:
+                        process.communicate(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.communicate(timeout=3)
 
 
 class IncludeHelperTests(unittest.TestCase):
