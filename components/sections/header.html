@@ -1,29 +1,18 @@
 <header class="topbar" aria-label="Site header">
   <div class="topbar-inner site-shell">
     <a class="logo" href="/" aria-label="Keiverse home">
-      <img
-        class="logo-image logo-image-light"
-        src="assets/img/keiverse_logo_lightmode_black_transparent.png"
-        width="1845"
-        height="289"
-        alt="Keiverse"
-      >
-      <img
-        class="logo-image logo-image-dark"
-        src="assets/img/keiverse_logo_darkmode_white_transparent.png"
-        width="1845"
-        height="289"
-        alt=""
-        aria-hidden="true"
-      >
+      <img class="logo-image logo-image-light" src="assets/img/keiverse_logo_lightmode_black_transparent.png" width="1845" height="289" alt="Keiverse">
+      <img class="logo-image logo-image-dark" src="assets/img/keiverse_logo_darkmode_white_transparent.png" width="1845" height="289" alt="" aria-hidden="true">
     </a>
     <nav class="nav-actions" aria-label="Primary navigation">
-      <button class="button donate-toggle" type="button" data-sponsor-toggle data-i18n="navDonate" aria-haspopup="dialog" aria-expanded="false">Donate</button>
-      <a class="button" href="https://grafana.keiminem.com/public-dashboards/32d4cf1d87a24a31b5540995402ab6ee" target="_blank" rel="noopener noreferrer" data-i18n="navServerStatus">Server status</a>
-      <a class="button" href="https://mirror.keiminem.com/" data-mirror-trigger="mirror1" data-i18n="navMirror1">Mirror 1</a>
-      <a class="button" href="https://mirror2.keiminem.com/" data-mirror-trigger="mirror2" data-i18n="navMirror2">Mirror 2</a>
-      <button class="button" type="button" id="language-toggle" aria-label="Switch language">한국어</button>
-      <button class="button theme-toggle" type="button" id="theme-toggle" aria-label="Change theme">Auto</button>
+      <div class="nav-support">
+        <button class="button donate-toggle" type="button" data-sponsor-toggle data-i18n="navDonate" aria-haspopup="dialog" aria-expanded="false">Donate</button>
+        <a class="button" href="https://grafana.keiminem.com/public-dashboards/32d4cf1d87a24a31b5540995402ab6ee" target="_blank" rel="noopener noreferrer" data-i18n="navServerStatus">Server status</a>
+      </div>
+      <div class="nav-preferences">
+        <button class="button" type="button" id="language-toggle" aria-label="Switch to Korean (한국어)">한국어</button>
+        <button class="button theme-toggle" type="button" id="theme-toggle" aria-label="Change theme">Auto</button>
+      </div>
     </nav>
   </div>
 </header>

@@ -1,21 +1,23 @@
-<section class="card" aria-labelledby="server-info-title">
-  <h2 id="server-info-title" data-i18n="mirrorInfoTitle">Mirror access</h2>
-  <p data-i18n="mirrorInfoBody">Use these endpoints in browsers, package managers, and rsync-based synchronization jobs.</p>
-  <dl class="info-list">
-    <div class="endpoint">
-      <dt>HTTPS</dt>
-      <dd><a class="domain" href="https://mirror.keiminem.com/">https://mirror.keiminem.com/</a></dd>
-      <dd><a class="domain" href="https://mirror2.keiminem.com/">https://mirror2.keiminem.com/</a></dd>
-    </div>
-    <div class="endpoint">
-      <dt>HTTP</dt>
-      <dd><a class="domain" href="http://mirror.keiminem.com/">http://mirror.keiminem.com/</a></dd>
-      <dd><a class="domain" href="http://mirror2.keiminem.com/">http://mirror2.keiminem.com/</a></dd>
-    </div>
-    <div class="endpoint">
-      <dt>RSYNC</dt>
-      <dd><span class="domain">rsync://rsync.keiminem.com/</span></dd>
-      <dd><span class="domain">rsync://rsync2.keiminem.com/</span></dd>
-    </div>
-  </dl>
+<section class="mirror-access" id="mirror-access" aria-labelledby="server-info-title">
+  <div class="access-heading"><h2 id="server-info-title" data-i18n="mirrorInfoTitle">Mirror access</h2><span class="protocol-summary">HTTP / HTTPS / RSYNC</span></div>
+  <div class="mirror-endpoints">
+    <section class="mirror-node" aria-labelledby="mirror-1-access-title">
+      <div class="mirror-node-heading"><h3 id="mirror-1-access-title" data-i18n="mirrorOneTitle">Mirror 1</h3><span class="node-number" aria-hidden="true">01</span></div>
+      <dl class="endpoint-list">
+        <div class="endpoint"><dt>HTTPS</dt><dd class="endpoint-address"><a href="https://mirror.keiminem.com/"><code>https://mirror.keiminem.com/</code></a><button class="copy-button" type="button" data-copy="https://mirror.keiminem.com/" aria-label="Copy address" data-i18n-aria-label="copyAddress"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><span class="sr-only" data-i18n="copyAddress">Copy address</span></button></dd></div>
+        <div class="endpoint"><dt>HTTP</dt><dd class="endpoint-address"><a href="http://mirror.keiminem.com/"><code>http://mirror.keiminem.com/</code></a><button class="copy-button" type="button" data-copy="http://mirror.keiminem.com/" aria-label="Copy address" data-i18n-aria-label="copyAddress"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><span class="sr-only" data-i18n="copyAddress">Copy address</span></button></dd></div>
+        <div class="endpoint"><dt>RSYNC</dt><dd class="endpoint-address"><code>rsync://rsync.keiminem.com/</code><button class="copy-button" type="button" data-copy="rsync://rsync.keiminem.com/" aria-label="Copy address" data-i18n-aria-label="copyAddress"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><span class="sr-only" data-i18n="copyAddress">Copy address</span></button></dd></div>
+      </dl>
+      <a class="mirror-preview-trigger" href="https://mirror.keiminem.com/" data-mirror-trigger="mirror1" aria-pressed="false" aria-controls="mirror-preview"><span data-i18n="previewMirror">Preview directory</span><span aria-hidden="true">↗</span></a>
+    </section>
+    <section class="mirror-node" aria-labelledby="mirror-2-access-title">
+      <div class="mirror-node-heading"><h3 id="mirror-2-access-title" data-i18n="mirrorTwoTitle">Mirror 2</h3><span class="node-number" aria-hidden="true">02</span></div>
+      <dl class="endpoint-list">
+        <div class="endpoint"><dt>HTTPS</dt><dd class="endpoint-address"><a href="https://mirror2.keiminem.com/"><code>https://mirror2.keiminem.com/</code></a><button class="copy-button" type="button" data-copy="https://mirror2.keiminem.com/" aria-label="Copy address" data-i18n-aria-label="copyAddress"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><span class="sr-only" data-i18n="copyAddress">Copy address</span></button></dd></div>
+        <div class="endpoint"><dt>HTTP</dt><dd class="endpoint-address"><a href="http://mirror2.keiminem.com/"><code>http://mirror2.keiminem.com/</code></a><button class="copy-button" type="button" data-copy="http://mirror2.keiminem.com/" aria-label="Copy address" data-i18n-aria-label="copyAddress"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><span class="sr-only" data-i18n="copyAddress">Copy address</span></button></dd></div>
+        <div class="endpoint"><dt>RSYNC</dt><dd class="endpoint-address"><code>rsync://rsync2.keiminem.com/</code><button class="copy-button" type="button" data-copy="rsync://rsync2.keiminem.com/" aria-label="Copy address" data-i18n-aria-label="copyAddress"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><span class="sr-only" data-i18n="copyAddress">Copy address</span></button></dd></div>
+      </dl>
+      <a class="mirror-preview-trigger" href="https://mirror2.keiminem.com/" data-mirror-trigger="mirror2" aria-pressed="false" aria-controls="mirror-preview"><span data-i18n="previewMirror">Preview directory</span><span aria-hidden="true">↗</span></a>
+    </section>
+  </div>
 </section>

@@ -1,213 +1,129 @@
 # Keimirror
 
-Keimirror는 Keiverse가 대한민국 구미에서 운영하는 공개 오픈소스 미러 안내 허브입니다. `keiminem.com` 웹 페이지에서 `mirror.keiminem.com`과 `mirror2.keiminem.com`의 접속 정보, 서버 사양, 지원 프로젝트 현황, 운영 정책을 한곳에 정리합니다.
+Keiverse가 대한민국 구미에서 운영하는 공개 오픈소스 미러 안내 허브입니다. `keiminem.com`에서 프로젝트를 찾고, 두 독립 미러의 저장소와 HTTP·HTTPS·rsync 접속 정보를 이용할 수 있습니다.
 
-## 현재 상태
+## 사용하기
 
-- 웹 허브는 모듈화된 정적 HTML, CSS, JavaScript로 구성되어 별도 빌드 과정 없이 배포할 수 있습니다.
-- 미러 1과 미러 2는 각각 독립 서버로 운영하며, HTTP, HTTPS, rsync 엔드포인트를 제공합니다.
-- 두 미러 모두 DDoS 완화를 위한 CDN을 사용하되, 파일은 원본 미러에서 직접 제공되도록 CDN 캐싱을 사용하지 않습니다.
-- 한국어와 영어 UI를 지원하며, `?lang=ko` 쿼리 또는 언어 전환 버튼으로 표시 언어를 바꿀 수 있습니다.
-- 자동, 라이트, 다크 테마 전환, 접속자 IP 확인, GitHub Sponsors 후원 안내 기능을 제공합니다.
-- 검색 엔진 수집을 위한 메타 태그, canonical, hreflang, JSON-LD, `robots.txt`, `sitemap.xml`, 파비콘 세트를 포함합니다.
-- PR 병합 시 또는 수동 실행 시 GitHub-hosted runner에서 rsync로 운영 서버에 배포하는 GitHub Actions 워크플로를 포함합니다.
+- **프로젝트 검색**: 이름·한국어 별칭 검색과 전체/공식/커뮤니티 필터를 함께 사용합니다. 결과 수와 빈 결과 초기화를 제공합니다.
+- **프로젝트 바로가기**: 10개 프로젝트마다 미러 1·2의 실제 하위 디렉터리로 이동합니다.
+- **주소 복사**: HTTPS·HTTP·rsync 주소 여섯 개를 복사합니다. 클립보드 사용이 차단되면 실패를 알리고 주소를 선택해 수동 복사를 돕습니다.
+- **디렉터리 미리보기**: 미러 카드 아래에서 루트 목록을 열 수 있습니다. 직접 열기와 닫기 버튼을 제공하며, 언어를 바꿔도 탐색 중인 iframe을 다시 로드하지 않습니다.
+- **한·영 / 테마**: 영어·한국어, 자동·라이트·다크 테마를 지원합니다. `?lang=en`과 `?lang=ko`는 저장된 언어보다 우선합니다. 저장소가 차단되거나 가득 차도 현재 페이지 조작은 유지됩니다.
+- **서버상태**: Donate 바로 옆의 링크가 기존 Grafana 공개 대시보드를 새 탭에서 엽니다. 로그인·권한 설정은 변경하지 않습니다.
+- **후원 / 문의**: GitHub Sponsors 안내는 키보드 포커스를 관리하는 네이티브 대화상자로 열립니다. 문의·면책 조항·서버 사양·Eliv CDN 후원 안내는 보존합니다.
 
-## 운영 목표
+HTTP 성공이나 iframe 로드 이벤트를 동기화 최신성·가동률·성능 측정값으로 표시하지 않습니다. 중요한 다운로드는 upstream 체크섬과 서명으로 검증하세요.
 
-- 웹 서버, 미러 1, 미러 2를 각각 분리해 장애 영향을 줄이고 유지보수를 단순화합니다.
-- 웹 서버는 Keimirror 소개, 운영 정책, 미러 접속 정보, 서버 프로필, 지원 프로젝트 현황을 제공합니다.
-- 미러 1은 `https://mirror.keiminem.com/`에서 fancyindex 기반 기본 파일 목록을 제공합니다.
-- 미러 2는 `https://mirror2.keiminem.com/`에서 fancyindex 기반 기본 파일 목록을 제공합니다.
-- rsync 동기화가 필요한 사용자를 위해 `rsync://rsync.keiminem.com/` 및 `rsync://rsync2.keiminem.com/` 정보를 함께 안내합니다.
+## 기본 기능과 개인정보
 
-## 주요 기능
+본문과 링크는 처음부터 HTML에 들어 있으므로 JavaScript가 꺼져도 이용할 수 있습니다. 검색·테마·복사 등은 추가 기능입니다. 초기 방문에 외부 폰트, 분석 스크립트, IP 조회 또는 미러 iframe을 자동 요청하지 않습니다.
 
-- **컴포넌트 기반 정적 페이지**: `index.html`은 레이아웃 자리만 두고, 실제 섹션과 카드는 `components/` 하위 HTML을 `fetch()`로 불러옵니다.
-- **미러 디렉터리 미리보기**: 상단 미러 버튼을 누르면 히어로 영역에서 선택한 미러의 디렉터리 목록을 iframe으로 표시하고, 새 탭 열기 링크도 제공합니다.
-- **다국어 지원**: `assets/js/i18n.js`에서 영어와 한국어 문자열을 관리하며, `data-i18n` 속성을 기준으로 문구를 교체합니다.
-- **테마 전환**: 자동, 라이트, 다크 테마를 순환하며 사용자의 선택을 `localStorage`에 저장합니다.
-- **접속자 IP 확인**: 사용자가 버튼을 누를 때 `api.ipify.org`를 호출해 현재 클라이언트 IP를 표시합니다.
-- **운영 정보 카드**: 환영 문구, 면책 조항, 문의, 서버 프로필, 미러 접속 정보, 프로젝트 현황, Eliv 후원 감사, GitHub Sponsors 후원 안내를 카드 단위로 제공합니다.
-- **서버상태**: 헤더 Donate 바로 옆의 `서버상태` / `Server status` 버튼이 기존 Grafana 공개 대시보드 `https://grafana.keiminem.com/public-dashboards/32d4cf1d87a24a31b5540995402ab6ee`를 새 탭으로 엽니다 (`rel="noopener noreferrer"`). Grafana 로그인이나 설정 변경 없이 공개 링크만 사용합니다.
-- **후원 CTA**: 헤더 Donate 버튼과 푸터 후원 링크를 통해 GitHub Sponsors 팝업 및 후원 페이지로 연결합니다.
-- **SEO 기본 구성**: Open Graph, Twitter Card, JSON-LD, canonical, hreflang, sitemap, robots 설정을 포함합니다.
-- **배포 자동화**: PR이 `main` 브랜치에 병합되면 GitHub-hosted runner가 SSH 키를 준비하고 rsync로 운영 경로를 동기화하며, 필요할 때 Actions 화면에서 현재 `main`을 즉시 수동 배포할 수도 있습니다.
+IP 확인은 사용자가 버튼을 누를 때만 `api.ipify.org`에 요청합니다. 중복 요청을 막고 8초 후 중단하며, 잘못된 응답과 네트워크 실패를 표시합니다. 확인한 IP를 브라우저 저장소에 보관하지 않습니다. 언어·테마 선호도만 `localStorage`를 사용합니다. 일반적인 서버 접속 로그 정책까지 변경하거나 보장하는 것은 아닙니다.
 
-## 파일 구성
+## 소스와 생성물
+
+운영 서버에는 Node.js·Python·빌드 서버가 필요하지 않습니다. 생성된 완성 HTML과 런타임을 저장소에 함께 커밋합니다.
 
 ```text
-.
-├── index.html
-├── robots.txt
-├── sitemap.xml
-├── .github/
-│   ├── FUNDING.yml
-│   └── workflows/
-│       ├── Test SSH Connection.yml
-│       └── deploy-on-pr-merge.yml
-├── assets/
-│   ├── css/styles.css
-│   ├── favicon/
-│   ├── img/
-│   └── js/
-│       ├── app.js
-│       └── i18n.js
-├── components/
-│   ├── cards/
-│   └── sections/
-├── LICENSE
-└── README.md
+index.html                   # 생성된 HTML — 직접 수정하지 않음
+templates/index.html         # 메타데이터와 전체 페이지 구성
+components/sections/        # 헤더·히어로·본문·사이드바·푸터
+components/cards/           # 디렉터리·접속 정보·운영 안내
+assets/css/styles.css       # 반응형 배치·라이트/다크 토큰
+assets/js/app.js            # 기능 원본
+assets/js/i18n.js           # 한·영 번역 원본
+assets/js/site.js           # 생성된 런타임 — 직접 수정하지 않음
+tools/build.py              # Python 표준 라이브러리 기반 생성기
+tests/                      # Playwright·Axe·Python 회귀 테스트
+.github/workflows/          # PR 검증·검증 후 배포
 ```
 
-- `.github/FUNDING.yml`: GitHub Sponsors 계정 정보를 제공해 저장소 후원 버튼을 활성화합니다.
-- `.github/workflows/deploy-on-pr-merge.yml`: `main` 대상 PR 병합 완료 시 또는 수동 실행 시 GitHub-hosted runner에서 운영 서버로 정적 파일을 rsync 배포합니다.
-- `.github/workflows/Test SSH Connection.yml`: 배포용 SSH 시크릿과 원격 경로 접근성을 수동으로 점검하는 워크플로입니다.
-- `index.html`: 메타데이터, SEO 태그, 전역 스크립트와 섹션 컴포넌트 자리 표시자를 관리하는 진입 HTML입니다.
-- `assets/css/styles.css`: 사이트 전체 스타일, 반응형 레이아웃, 테마별 색상, 카드 UI, 미러 iframe 영역을 관리합니다.
-- `assets/js/app.js`: 컴포넌트 로딩, 중첩 컴포넌트 처리, 테마 전환, 언어 전환, 미러 목록 토글, 접속자 IP 조회, 후원 팝업 열기/닫기를 담당합니다.
-- `assets/js/i18n.js`: 영어와 한국어 번역 문자열과 후원 안내 문구를 관리합니다.
-- `assets/img/`: 라이트 모드와 다크 모드용 Keiverse 로고 이미지를 보관합니다.
-- `assets/favicon/`: 브라우저, Apple Touch Icon, Android, Microsoft Tile용 파비콘과 manifest 파일을 보관합니다.
-- `components/sections/`: 헤더, 히어로, 본문 컬럼, 사이드바, 푸터 등 레이아웃 섹션 단위 HTML을 보관합니다.
-- `components/cards/`: 환영 문구, 면책 조항, 문의, 서버 프로필, 접속자 IP, 미러 접속 정보, 프로젝트 현황, Eliv 후원 안내, 푸터 공지 등 카드 단위 HTML을 보관합니다.
-- `robots.txt`: 검색 엔진 크롤링 허용 범위와 sitemap 위치를 안내합니다.
-- `sitemap.xml`: `keiminem.com` 기본 페이지와 한국어 대체 URL 정보를 제공합니다.
-- `README.md`: 프로젝트 목적, 현재 상태, 작업 과정, 배포 절차를 기록합니다.
-- `LICENSE`: 프로젝트 라이선스입니다.
+`tools/build.py`는 신뢰된 저장소의 컴포넌트를 재귀적으로 합성하고 번역과 앱 코드를 단일 ES 모듈로 묶습니다. 순환 참조와 `components/` 밖의 포함 경로를 거부합니다. CSS·런타임 URL의 콘텐츠 해시로 변경된 파일을 이전 브라우저 캐시와 구분합니다. 앱은 `data-rendered="true"`인 운영 페이지에서 컴포넌트를 다시 요청하지 않습니다.
 
-## 컴포넌트 구조
+개발용 비합성 페이지에서만 제한 시간과 개별 오류 복구가 있는 컴포넌트 로더가 동작합니다. 한 컴포넌트 실패 때문에 나머지 조작을 모두 중단하지 않습니다.
 
-`index.html`은 `data-component` 속성을 가진 빈 컨테이너를 선언합니다. `assets/js/app.js`는 해당 경로의 HTML을 불러와 삽입하고, 삽입된 HTML 안에 다시 `data-component`가 있으면 중첩 컴포넌트까지 재귀적으로 로딩합니다.
+기존 파비콘, 로고, Open Graph·Twitter·JSON-LD 메타데이터, canonical·hreflang, `robots.txt`, `sitemap.xml`, `LICENSE`는 유지합니다.
 
-현재 레이아웃 흐름은 다음과 같습니다.
+## 수정 및 테스트
 
-1. `components/sections/header.html`
-   - 로고, 미러 1/2 버튼, Donate 버튼, 서버상태 링크, 언어 전환, 테마 전환을 제공합니다.
-2. `components/sections/hero.html`
-   - 서비스 제목, 설명, 미러 디렉터리 iframe 패널을 제공합니다.
-3. `components/sections/overview.html`
-   - `welcome`, `disclaimer`, `contact`, `server-profile` 카드를 포함합니다.
-4. `components/sections/sidebar.html`
-   - `visitor-ip`, `mirror-access`, `project-status`, `eliv-thanks` 카드를 포함합니다.
-5. `components/cards/footer-notice.html`
-   - Keiverse 미러 네트워크와 krfoss 참여 안내, GitHub Sponsors 후원 CTA와 팝업을 제공합니다.
-6. `components/sections/footer.html`
-   - 저작권 및 운영 문구를 제공합니다.
-
-새 섹션이나 카드를 추가할 때는 `components/` 하위에 HTML 파일을 만들고, 포함할 위치의 `data-component` 경로만 추가하면 됩니다. 다국어 문구가 필요한 요소에는 `data-i18n` 키를 지정하고 `assets/js/i18n.js`의 `en`, `ko` 객체에 같은 키를 추가합니다.
-
-## 미러 및 프로젝트 정보
-
-### 접속 엔드포인트
-
-| 구분 | 미러 1 | 미러 2 |
-| --- | --- | --- |
-| HTTPS | `https://mirror.keiminem.com/` | `https://mirror2.keiminem.com/` |
-| HTTP | `http://mirror.keiminem.com/` | `http://mirror2.keiminem.com/` |
-| RSYNC | `rsync://rsync.keiminem.com/` | `rsync://rsync2.keiminem.com/` |
-
-### 서버 프로필
-
-| 항목 | 미러 1 | 미러 2 |
-| --- | --- | --- |
-| CPU | Intel Xeon E5-2650 v2, 2소켓 | Intel Xeon E5-2696 v4 |
-| RAM | 128 GB | 32 GB |
-| Storage | 10 TB | 10 TB |
-| Network | WAN 2회선, 각 1Gbps, 총 2Gbps | WAN 2회선, 각 1Gbps, 총 2Gbps |
-| Location | 대한민국 구미 | 대한민국 구미 |
-| CDN | DDoS 완화 용도, 캐싱 미사용 | DDoS 완화 용도, 캐싱 미사용 |
-
-### 지원 프로젝트 현황
-
-- 공식 미러: Arch Linux Tier 1, Gentoo, Kali Linux, CachyOS, Artix, OPNsense
-- 커뮤니티 미러: EndeavourOS, Fyra Labs, Manjaro, Proxmox
-
-## 배포 절차
-
-1. 웹 서버의 정적 웹 루트에 저장소의 모든 파일과 디렉터리를 배치합니다.
-2. 웹 서버 도메인 `keiminem.com`이 `index.html`을 기본 페이지로 제공하도록 설정합니다.
-3. `assets/` 및 `components/` 경로가 같은 도메인에서 정적 파일로 접근 가능한지 확인합니다.
-4. 브라우저에서 컴포넌트 로딩, 언어 전환, 테마 전환, 미러 iframe 토글, 후원 팝업이 정상 동작하는지 확인합니다.
-5. `robots.txt`와 `sitemap.xml`이 루트 경로에서 접근 가능한지 확인합니다.
-6. 미러 1 서버는 `mirror.keiminem.com` 도메인에서 fancyindex 기반 기본 디렉터리 목록을 제공합니다.
-7. 미러 2 서버는 `mirror2.keiminem.com` 도메인에서 fancyindex 기반 기본 디렉터리 목록을 제공합니다.
-8. HTTP, HTTPS, rsync 엔드포인트와 CDN 캐싱 정책이 운영 의도와 일치하는지 확인합니다.
-9. GitHub Actions 배포를 사용할 경우 `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER`, `DEPLOY_PATH` 시크릿을 설정하고, 필요 시 `Test SSH Connection` 워크플로로 연결을 먼저 확인합니다.
-10. 현재 `main`의 내용을 즉시 반영하려면 Actions의 `Deploy on PR Merge` 워크플로에서 `Run workflow`를 실행합니다.
-
-## 자동 회귀 테스트
-
-Node.js 22와 Python 3가 필요합니다. 사이트 자체에는 Node.js나 빌드 과정이 필요하지 않습니다.
+개발/CI는 Node.js 22와 Python 3.9 이상을 권장합니다. 의존성은 정식 릴리스에 고정하고 lockfile을 유지합니다.
 
 ```bash
 npm ci
 npx playwright install chromium
+
+# 템플릿·컴포넌트·JS·CSS 수정 후:
+python3 tools/build.py
+python3 tools/build.py --check
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 npm test
 ```
 
-Playwright가 `tests/serve.py`로 `127.0.0.1:18763`에 테스트 전용 정적 서버를 시작하고 Chromium에서 실제 페이지와 중첩 컴포넌트를 로드합니다. 이미 사용 중인 포트는 재사용하지 않고 실패합니다. Linux CI에서는 `npx playwright install --with-deps chromium`으로 시스템 의존성도 설치합니다.
+검증 범위:
+- 320·375·768·1280·1440px 배치, 컨테이너 넘침, 44px 터치 영역
+- 한·영 × 라이트·다크 WCAG 2 A/AA·2.1 A/AA 자동 검사와 후원 대화상자
+- 검색·카테고리 교집합, 다중 검색어, 한국어 별칭, 빈 결과와 초기화
+- 프로젝트 URL, 복사 성공/차단/실패, 브라우저 저장소 장애
+- 미리보기 키보드 조작·포커스 복귀·언어 변경 중 탐색 유지
+- 후원 대화상자의 모달 동작·Escape·배경 클릭·포커스 복귀
+- IP 조회 대기·타임아웃·잘못된 응답·재시도
+- JavaScript 없는 본문, 외부 요청 없는 첫 화면, ID·앵커 무결성
+- 정적 출력 일치·캐시 해시 갱신·배포 선행 검증 조건
 
-테스트 서버는 병렬 브라우저의 중첩 컴포넌트 요청을 수용하도록 연결 대기열을 128로 지정합니다. macOS의 Python 3.9 기본 대기열(5)에서는 동시 첫 방문 시 `ERR_CONNECTION_RESET`이 재현되었습니다. 컴포넌트 로딩 실패로 컨트롤 바인딩과 초기 언어 적용이 건너뛰어지는 현상이므로 worker 수 제한이나 재시도로 숨기지 않습니다. 동시 새 브라우저 컨텍스트 회귀 테스트는 네트워크/콘솔 오류 부재, 모든 컴포넌트 로딩, 한국어 상태 링크 및 테마 조작을 함께 확인합니다. 이 서버는 로컬 테스트 전용이며 운영 배포 설정은 변경하지 않습니다.
+Playwright는 `tests/serve.py`로 `127.0.0.1:18763`에 전용 서버를 띄우며 기존 프로세스를 재사용하지 않습니다. 병렬 요청을 위해 연결 대기열은 128입니다. 외부 미러·Grafana·IP 조회 오류 상황은 fixture로 검증하므로 실시간 가용성·미러 동기화 상태 검사는 아닙니다. Axe 통과 역시 모든 보조공학 환경의 완전한 인증은 아닙니다.
 
-- 저장소 접근 자체 및 `getItem` 차단, `setItem` 용량 초과 상황에서도 초기화와 언어/테마 반복 전환을 검증합니다.
-- 저장소 사용이 불가능하면 현재 페이지의 선택은 유지되지만 새로고침 후 보존은 보장하지 않습니다. 정상 환경에서는 기존과 같이 저장합니다.
-- 지원하지 않는 저장 값은 영어와 자동 테마로 복구하며, `?lang=ko` 우선순위는 유지합니다.
-- 서버상태 링크는 데스크톱 및 375px/320px 모바일에서 Donate 바로 옆 배치, 정확한 공개 URL, 안전한 새 탭 열기와 한국어/영어 전환을 실제 Chromium으로 검증합니다. CI의 Grafana 응답은 로컬 fixture이며 공개 대시보드의 실시간 가용성 검사는 아닙니다.
-- 정상 저장/새로고침과 미러 미리보기, 후원 팝업도 검증합니다. 미러 응답은 로컬 테스트 fixture이며 외부 미러 가용성을 검증하지 않습니다.
-- `.github/workflows/test.yml`은 PR 및 `main` push에서 브라우저 테스트를 실행합니다. 시크릿이나 배포 권한은 사용하지 않습니다.
-- 기존 병합/수동 rsync 배포 트리거는 유지합니다. 테스트·의존성·테스트 결과 파일은 업로드에서 제외합니다. CI는 배포 워크플로의 선행 조건으로 연결되어 있지 않으므로 병합 전 `browser-tests` 성공을 확인해야 합니다.
-
-## 로컬 확인
-
-브라우저에서 `file://`로 접근하면 컴포넌트 `fetch()`가 제한될 수 있으므로 로컬 정적 서버로 확인합니다.
+로컬 미리보기:
 
 ```bash
-python3 -m http.server 8000
+python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-이후 `http://localhost:8000/`에서 페이지를 확인합니다.
+생성 파일 두 개도 함께 커밋하세요. `--check`가 오래된 생성물을 찾으면 CI와 배포 검증이 실패합니다.
 
-권장 확인 항목은 다음과 같습니다.
+## 접속 정보
 
-- 페이지 진입 시 헤더, 히어로, 본문 카드, 사이드바 카드, 푸터가 모두 표시되는지 확인합니다.
-- 미러 1/2 버튼을 눌렀을 때 iframe 패널이 열리고 다시 누르면 닫히는지 확인합니다.
-- 언어 전환 버튼으로 영어와 한국어 문구가 자연스럽게 바뀌는지 확인합니다.
-- 테마 버튼으로 자동, 라이트, 다크 모드가 순환되는지 확인합니다.
-- Donate 버튼과 푸터 후원 링크가 GitHub Sponsors 팝업 또는 후원 페이지로 자연스럽게 연결되는지 확인합니다.
-- 접속자 IP 확인 버튼이 네트워크 가능 환경에서 정상 응답을 표시하는지 확인합니다.
+- 미러 1: `https://mirror.keiminem.com/`, `http://mirror.keiminem.com/`, `rsync://rsync.keiminem.com/`
+- 미러 2: `https://mirror2.keiminem.com/`, `http://mirror2.keiminem.com/`, `rsync://rsync2.keiminem.com/`
 
-## 작업 과정 기록
+기본 경로는 두 미러에서 동일합니다.
 
-앞으로의 변경 작업은 이 섹션에 날짜별로 기록합니다.
+- 공식 참여 프로젝트: Arch Linux Tier 1 `/archlinux/`, Gentoo `/gentoo/`, Kali Linux `/kali/`, CachyOS `/cachyos/`, Artix `/artix/`, OPNsense `/opnsense/`
+- 커뮤니티 프로젝트: EndeavourOS `/endeavouros/`, Fyra Labs `/fyralabs/`, Manjaro `/manjaro/`, Proxmox `/proxmox/`
 
-### 2026-08-18
+분류는 프로젝트 참여 범위이며 모든 upstream이 양쪽 엔드포인트를 동일하게 공식 등재했다는 뜻은 아닙니다. 예를 들어 2026-10-28 OPNsense 공식 다운로드 페이지에서는 미러 1을 확인했습니다. 각 프로젝트의 공식 목록이 최종 기준입니다.
 
-1. PR 병합을 기다리지 않고 현재 `main`의 정적 사이트를 운영 서버에 반영할 수 있도록 배포 워크플로에 수동 실행 기능을 추가했습니다.
-2. 자동 배포와 수동 배포 모두 동일한 검증된 SSH 및 rsync 단계를 사용하도록 구성했습니다.
+추가 경로에는 Gentoo Portage `/gentoo-portage/`, Kali 이미지 `/kali-images/`, Artix ISO `/artix-iso/` 등이 있습니다. CachyOS의 ISO 하위 디렉터리는 대문자 `ISO/`입니다.
 
-### 2026-06-29
+기존 공개 사양:
+- 미러 1: Xeon E5-2650 v2 2소켓, RAM 128GB, 저장공간 10TB
+- 미러 2: Xeon E5-2696 v4, RAM 32GB, 저장공간 10TB
+- 구미의 독립 서버, 각 WAN 1Gbps 두 회선. 단일 다운로드의 보장 속도는 아닙니다.
+- CDN은 DDoS 완화 용도로만 사용하며 CDN 캐싱은 사용하지 않습니다.
 
-1. GitHub Sponsors 후원 CTA를 README의 현재 상태, 주요 기능, 컴포넌트 구조, 로컬 확인 항목에 반영했습니다.
-2. iframe 기반 후원 위젯 대신 저장소 네이티브 버튼, 헤더 Donate 버튼, 푸터 후원 링크, 모달형 후원 안내로 구성된 현재 UI를 문서화했습니다.
-3. `.github/FUNDING.yml`과 배포/SSH 점검 GitHub Actions 워크플로를 파일 구성 및 배포 절차에 추가했습니다.
-4. PR 병합 후 GitHub-hosted runner가 SSH와 rsync로 운영 서버를 동기화하는 배포 흐름과 필요한 시크릿을 명시했습니다.
+## 배포
 
-### 2026-06-19
+1. PR을 `main` 대상으로 작성하고 `Browser tests` 성공을 확인합니다.
+2. 병합 또는 `Deploy on PR Merge` 수동 실행으로 배포합니다.
+3. 워크플로가 **동일 커밋의 생성물·Python·브라우저 테스트를 다시 검증**합니다. 실패하면 SSH/rsync 단계로 넘어가지 않습니다.
+4. 검증한 커밋만 기존 `keimirror` 환경의 SSH 시크릿으로 전송합니다. 진행 중 배포를 취소하지 않으며 rsync 지연 교체·지연 삭제를 사용합니다. 이는 사이트 전체의 원자적 릴리스 교체는 아닙니다.
+5. 운영 URL, 핵심 동작과 배포 파일 해시를 별도로 확인합니다. workflow 성공만으로 배포본 검증을 대신하지 않습니다.
 
-1. README를 현재 구현 상태 기준으로 재정리했습니다.
-2. 현재 상태, 주요 기능, 컴포넌트 구조, 미러 엔드포인트, 서버 프로필, 지원 프로젝트 현황을 별도 섹션으로 분리했습니다.
-3. SEO 파일, 파비콘, 로고, robots, sitemap 등 현재 저장소에 포함된 정적 리소스 설명을 파일 구성에 반영했습니다.
-4. 배포 절차와 로컬 확인 항목을 실제 컴포넌트 로딩 방식에 맞춰 보강했습니다.
+기존 시크릿은 `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER`, `DEPLOY_PATH`입니다. 키·인증·프록시 설정은 UI 변경 과정에서 바꾸지 않습니다. `Test SSH Connection`은 기존 연결 점검용으로 유지합니다.
 
-### 2026-06-16
+테스트·개발 의존성·도구·템플릿·문서·캐시는 업로드에서 제외합니다. 큰 변경 전에는 웹 루트를 별도 보관하고 아카이브를 검증하세요. 롤백은 이전 검증 커밋을 복원한 PR을 동일 절차로 배포하거나, 운영자가 백업에서 정적 루트를 복원합니다. 미러 저장 파일·SSH 키·인증 설정은 UI 롤백 대상이 아닙니다.
 
-1. 한국어 번역 문구의 문장 흐름을 점검하고, 어색하거나 끊어지는 표현을 자연스럽게 다듬었습니다.
-2. 용어와 띄어쓰기를 정리해 `로드 밸런싱`, `면책 조항`, `한곳`처럼 일관된 표기를 적용했습니다.
-3. README의 작업 내용과 문장 구성을 정리해 프로젝트 설명, 파일 구성, 배포 절차를 더 명확하게 읽을 수 있도록 개선했습니다.
+## 작업 기록
 
-### 2026-06-15
+### 2026-10-28
 
-1. 프로젝트 목적을 `mirror.keiminem.com` 및 `mirror2.keiminem.com` 통합 안내 페이지로 정리했습니다.
-2. `index.html` 기반의 정적 HTML 페이지를 추가했습니다.
-3. 미러 1과 미러 2가 각각 fancyindex 기반 기본 목록을 제공하고, 웹 서버가 두 미러로 연결하는 운영 구조를 문서화했습니다.
-4. `index.html`을 레이아웃 전용 진입점으로 재구성하고, 섹션과 카드 HTML, CSS, JavaScript, 번역 데이터를 각각 별도 파일로 분리했습니다.
+소개 중심 레이아웃을 프로젝트 탐색 중심으로 재구성했습니다. 운영 정보와 기존 기능을 유지하면서 검색·분류·복사·키보드 조작·정적 첫 화면을 추가하고, 다국어 상태와 장애 복구를 보완했습니다. 접근성 검사와 배포 선행 검증도 함께 반영했습니다.
+
+### 이전 변경
+
+- 2026-08-18: 현재 `main` 수동 배포 지원
+- 2026-06-29: 네이티브 GitHub Sponsors 후원 안내 및 SSH/rsync 배포 문서화
+- 2026-06-19: 현행 운영 상태와 SEO·배포 구성 문서 정리
+- 2026-06-16: 한국어 문구와 용어 개선
+- 2026-06-15: 두 미러 통합 안내 페이지와 컴포넌트 구조 도입
+
+상세 변경 및 배포 이력은 Git 기록에서 확인할 수 있습니다.

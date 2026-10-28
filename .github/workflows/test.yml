@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      - run: python3 tools/build.py --check
+      - run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm test

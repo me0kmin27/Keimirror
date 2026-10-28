@@ -18,38 +18,87 @@ function savePreference(key, value) {
     // Storage may be blocked or full; the current page still works.
   }
 }
-const themeLabels = {
-  auto: '🌗 Auto',
-  light: '☀️ Light',
-  dark: '🌙 Dark',
-};
+const themeLabels = { auto: 'themeAuto', light: 'themeLight', dark: 'themeDark' };
+
 
 const mirrorTargets = {
   mirror1: { url: 'https://mirror.keiminem.com/', titleKey: 'mirrorOneTitle' },
   mirror2: { url: 'https://mirror2.keiminem.com/', titleKey: 'mirrorTwoTitle' },
 };
 
+const boundEvents = new WeakMap();
+
+function bindOnce(element, type, handler) {
+  if (!element) return;
+  const types = boundEvents.get(element) || new Set();
+  if (types.has(type)) return;
+  types.add(type);
+  boundEvents.set(element, types);
+  element.addEventListener(type, handler);
+}
+
+function componentError(host) {
+  const fallback = document.createElement('div');
+  fallback.dataset.componentError = '';
+  fallback.className = 'component-error';
+  fallback.setAttribute('role', 'status');
+  const message = document.createElement('p');
+  message.dataset.i18n = 'componentFailure';
+  const retry = document.createElement('button');
+  retry.type = 'button';
+  retry.className = 'button';
+  retry.dataset.componentRetry = '';
+  retry.dataset.i18n = 'componentRetry';
+  const dictionary = translations[root.lang] || translations.en;
+  message.textContent = dictionary.componentFailure;
+  retry.textContent = dictionary.componentRetry;
+  retry.addEventListener('click', async () => {
+    retry.disabled = true;
+    await loadComponent(host);
+    bindControls();
+    applyTheme(root.dataset.theme || 'auto');
+    applyLanguage(root.lang);
+  });
+  fallback.append(message, retry);
+  host.replaceChildren(fallback);
+}
+
 async function loadComponent(host) {
-  const componentPath = host.dataset.component;
-  const response = await fetch(componentPath);
-
-  if (!response.ok) {
-    throw new Error(`Failed to load component: ${componentPath}`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(host.dataset.component, { signal: controller.signal });
+    if (!response.ok) throw new Error('Component unavailable');
+    host.innerHTML = await response.text();
+    clearTimeout(timeout);
+    const nested = [...host.querySelectorAll('[data-component]')]
+      .filter(child => child.parentElement.closest('[data-component]') === host);
+    await Promise.allSettled(nested.map(loadComponent));
+  } catch {
+    componentError(host);
+  } finally {
+    clearTimeout(timeout);
   }
-
-  host.innerHTML = await response.text();
-  const nestedComponents = [...host.querySelectorAll('[data-component]')];
-  await Promise.all(nestedComponents.map(loadComponent));
 }
 
 async function loadComponents() {
-  const componentHosts = [...document.querySelectorAll('[data-component]')];
-  await Promise.all(componentHosts.map(loadComponent));
+  const hosts = [...document.querySelectorAll('[data-component]')]
+    .filter(host => !host.parentElement.closest('[data-component]'));
+  await Promise.allSettled(hosts.map(loadComponent));
+}
+
+function renderThemeControl() {
+  const theme = root.dataset.theme || 'auto';
+  const button = document.getElementById('theme-toggle');
+  const dictionary = translations[root.lang] || translations.en;
+  if (button) {
+    button.textContent = dictionary[themeLabels[theme]];
+    button.setAttribute('aria-label', dictionary.themeControl.replace('{theme}', dictionary[themeLabels[theme]]));
+  }
 }
 
 function applyTheme(theme) {
   if (!themes.includes(theme)) theme = 'auto';
-  const themeToggle = document.getElementById('theme-toggle');
 
   if (theme === 'auto') {
     root.removeAttribute('data-theme');
@@ -57,10 +106,7 @@ function applyTheme(theme) {
     root.dataset.theme = theme;
   }
 
-  if (themeToggle) {
-    themeToggle.textContent = themeLabels[theme] || themeLabels.auto;
-    themeToggle.setAttribute('aria-label', `Change theme, current theme: ${theme}`);
-  }
+  renderThemeControl();
   savePreference('keimirror-theme', theme);
 }
 
@@ -75,12 +121,30 @@ function applyLanguage(language) {
     if (dictionary[key]) element.textContent = dictionary[key];
   });
 
-  if (languageToggle) languageToggle.textContent = language === 'en' ? '한국어' : 'English';
+  for (const [marker, attribute] of [['data-i18n-placeholder', 'placeholder'], ['data-i18n-aria-label', 'aria-label']]) {
+    document.querySelectorAll(`[${marker}]`).forEach(element => {
+      const text = dictionary[element.getAttribute(marker)];
+      if (text) element.setAttribute(attribute, text);
+    });
+  }
+  document.querySelectorAll('[data-project-directory]').forEach(filterProjects);
+  renderCopyStatus();
+  renderMirrorLabels();
+  renderVisitorIp();
+  renderThemeControl();
+  if (languageToggle) {
+    languageToggle.textContent = language === 'en' ? '한국어' : 'English';
+    languageToggle.setAttribute('aria-label', dictionary.languageControl);
+  }
   savePreference('keimirror-language', language);
 }
 
+let mirrorOpener;
+let mirrorTimeout;
+let mirrorFeedback = 'mirrorPreviewNote';
 
 function hideMirrorList() {
+  clearTimeout(mirrorTimeout);
   const placeholder = document.querySelector('[data-mirror-placeholder]');
   const mirrorList = document.querySelector('[data-mirror-list]');
   const mirrorFrame = document.querySelector('[data-mirror-frame]');
@@ -93,6 +157,7 @@ function hideMirrorList() {
   }
   if (mirrorFrame) mirrorFrame.removeAttribute('src');
   hero?.classList.remove('is-showing-mirror-list');
+  if (mirrorOpener?.isConnected) mirrorOpener.focus();
 
   document.querySelectorAll('[data-mirror-trigger]').forEach((trigger) => {
     trigger.classList.remove('primary');
@@ -100,16 +165,27 @@ function hideMirrorList() {
   });
 }
 
-function showMirrorList(mirrorId) {
+function renderMirrorLabels() {
+  const mirrorId = document.querySelector('[data-mirror-list]')?.dataset.activeMirror;
+  const mirror = mirrorTargets[mirrorId];
+  if (!mirror) return;
+  const dictionary = translations[root.lang] || translations.en;
+  const title = document.querySelector('[data-mirror-title]');
+  const frame = document.querySelector('[data-mirror-frame]');
+  if (title) title.textContent = dictionary[mirror.titleKey];
+  if (frame) frame.title = dictionary.mirrorFrameTitle.replace('{mirror}', dictionary[mirror.titleKey]);
+  const status = document.querySelector('[data-mirror-status]');
+  if (status) status.textContent = dictionary[mirrorFeedback];
+}
+
+function showMirrorList(mirrorId, opener) {
   const mirror = mirrorTargets[mirrorId];
   if (!mirror) return;
 
   const placeholder = document.querySelector('[data-mirror-placeholder]');
   const mirrorList = document.querySelector('[data-mirror-list]');
-  const mirrorTitle = document.querySelector('[data-mirror-title]');
   const mirrorFrame = document.querySelector('[data-mirror-frame]');
   const mirrorOpen = document.querySelector('[data-mirror-open]');
-  const dictionary = translations[root.lang] || translations.en;
 
   if (!mirrorList || !mirrorFrame || !mirrorOpen) return;
 
@@ -119,10 +195,20 @@ function showMirrorList(mirrorId) {
   mirrorList.hidden = false;
   hero?.classList.add('is-showing-mirror-list');
   mirrorList.dataset.activeMirror = mirrorId;
+  if (opener) mirrorOpener = opener;
+  clearTimeout(mirrorTimeout);
+  mirrorFeedback = 'mirrorLoading';
+  mirrorTimeout = setTimeout(() => {
+    mirrorFeedback = 'mirrorPreviewNote';
+    renderMirrorLabels();
+  }, 10000);
+  mirrorFrame.loading = 'eager';
+  // Keep the existing unsandboxed directory: restrictive flags can break downloads
+  // and directory links. It is cross-origin, and the direct link remains available.
   mirrorFrame.src = mirror.url;
   mirrorOpen.href = mirror.url;
 
-  if (mirrorTitle) mirrorTitle.textContent = dictionary[mirror.titleKey] || mirror.url;
+  renderMirrorLabels();
 
   document.querySelectorAll('[data-mirror-trigger]').forEach((trigger) => {
     const isActive = trigger.dataset.mirrorTrigger === mirrorId;
@@ -131,20 +217,25 @@ function showMirrorList(mirrorId) {
   });
 }
 
+let sponsorOpener;
 
 function setSponsorPopup(open) {
   const sponsorModal = document.querySelector('[data-sponsor-modal]');
-  const sponsorDialog = sponsorModal?.querySelector('.sponsor-modal-dialog');
+  if (!sponsorModal || typeof sponsorModal.showModal !== 'function') return;
 
-  if (!sponsorModal) return;
-
-  sponsorModal.hidden = !open;
+  if (open && !sponsorModal.open) {
+    sponsorOpener = document.activeElement;
+    sponsorModal.hidden = false;
+    sponsorModal.showModal();
+  } else if (!open) {
+    if (sponsorModal.open) sponsorModal.close();
+    sponsorModal.hidden = true;
+    if (sponsorOpener?.isConnected) sponsorOpener.focus();
+  }
   document.querySelectorAll('[data-sponsor-toggle]').forEach((trigger) => {
     trigger.classList.toggle('primary', open);
     trigger.setAttribute('aria-expanded', String(open));
   });
-
-  if (open) sponsorDialog?.focus();
 }
 
 function toggleSponsorPopup() {
@@ -152,25 +243,138 @@ function toggleSponsorPopup() {
   setSponsorPopup(Boolean(sponsorModal?.hidden));
 }
 
+function filterProjects(directory) {
+  const search = directory.querySelector('#project-search');
+  const terms = (search?.value || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const category = directory.querySelector('[data-project-filter][aria-pressed="true"]')?.dataset.projectFilter || 'all';
+  const entries = [...directory.querySelectorAll('[data-project]')];
+  let count = 0;
+  for (const entry of entries) {
+    const text = (entry.dataset.search || entry.textContent).toLowerCase();
+    const matches = (category === 'all' || entry.dataset.category === category)
+      && terms.every(term => text.includes(term));
+    entry.hidden = !matches;
+    if (matches) count += 1;
+  }
+  const empty = directory.querySelector('[data-project-empty]');
+  if (empty) empty.hidden = count !== 0;
+  const status = directory.querySelector('[data-project-count]');
+  if (status) {
+    const dictionary = translations[root.lang] || translations.en;
+    status.textContent = dictionary.projectCount.replace('{count}', count).replace('{total}', entries.length);
+  }
+}
+
+function bindProjectDirectory() {
+  document.querySelectorAll('[data-project-directory]').forEach(directory => {
+    bindOnce(directory.querySelector('#project-search'), 'input', () => filterProjects(directory));
+    directory.querySelectorAll('[data-project-filter]').forEach(button => {
+      bindOnce(button, 'click', () => {
+        directory.querySelectorAll('[data-project-filter]').forEach(filter => {
+          filter.setAttribute('aria-pressed', String(filter === button));
+        });
+        filterProjects(directory);
+      });
+    });
+    directory.querySelectorAll('[data-project-reset]').forEach(button => {
+      bindOnce(button, 'click', () => {
+        const search = directory.querySelector('#project-search');
+        if (search) search.value = '';
+        directory.querySelectorAll('[data-project-filter]').forEach(filter => {
+          filter.setAttribute('aria-pressed', String(filter.dataset.projectFilter === 'all'));
+        });
+        filterProjects(directory);
+        search?.focus();
+      });
+    });
+    filterProjects(directory);
+  });
+}
+
+let copyState = null;
+
+function renderCopyStatus() {
+  const status = document.querySelector('[data-copy-status]');
+  if (!status || !copyState) return;
+  const dictionary = translations[root.lang] || translations.en;
+  status.textContent = `${dictionary[copyState.key]} ${copyState.value}`;
+}
+
+async function copyAddress(button) {
+  const value = button.dataset.copy;
+  button.disabled = true;
+  try {
+    await navigator.clipboard.writeText(value);
+    copyState = { key: 'copySuccess', value };
+  } catch {
+    copyState = { key: 'copyFailure', value };
+    const address = button.parentElement.querySelector('code');
+    const selection = window.getSelection();
+    if (address?.textContent === value && selection) {
+      const range = document.createRange();
+      range.selectNodeContents(address);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  } finally {
+    button.disabled = false;
+    renderCopyStatus();
+  }
+}
+
 function bindControls() {
-  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+  document.querySelectorAll('[data-copy]').forEach(button => {
+    bindOnce(button, 'click', () => copyAddress(button));
+  });
+  bindProjectDirectory();
+  bindOnce(document.getElementById('theme-toggle'), 'click', () => {
     const current = root.dataset.theme || 'auto';
     applyTheme(themes[(themes.indexOf(current) + 1) % themes.length]);
   });
 
-  document.getElementById('language-toggle')?.addEventListener('click', () => {
+  bindOnce(document.getElementById('language-toggle'), 'click', () => {
     const current = root.lang;
     const nextLanguage = current === 'en' ? 'ko' : 'en';
     applyLanguage(nextLanguage);
-
-    const activeMirror = document.querySelector('[data-mirror-list]')?.dataset.activeMirror;
-    if (activeMirror) showMirrorList(activeMirror);
   });
 
+  const mirrorFrame = document.querySelector('[data-mirror-frame]');
+  const mirrorList = document.querySelector('[data-mirror-list]');
+  if (mirrorFrame && mirrorList) {
+    let status = mirrorList.querySelector('[data-mirror-status], .preview-note');
+    if (!status) {
+      status = document.createElement('p');
+      status.className = 'preview-note';
+      mirrorFrame.before(status);
+    }
+    status.dataset.mirrorStatus = '';
+    status.setAttribute('role', 'status');
+    const showHelp = () => {
+      if (!mirrorList.dataset.activeMirror || mirrorList.hidden) return;
+      clearTimeout(mirrorTimeout);
+      // An iframe load event also fires on failure. Never label it healthy/online.
+      mirrorFeedback = 'mirrorPreviewNote';
+      renderMirrorLabels();
+    };
+    bindOnce(mirrorFrame, 'load', showHelp);
+    bindOnce(mirrorFrame, 'error', showHelp);
+  }
+
   document.querySelectorAll('[data-mirror-trigger]').forEach((trigger) => {
+    const mirrorList = document.querySelector('[data-mirror-list]');
+    if (!mirrorTargets[trigger.dataset.mirrorTrigger] || !mirrorList
+      || !document.querySelector('[data-mirror-frame]') || !document.querySelector('[data-mirror-open]')) return;
     trigger.setAttribute('role', 'button');
-    trigger.setAttribute('aria-pressed', 'false');
-    trigger.addEventListener('click', (event) => {
+    trigger.setAttribute('aria-pressed', String(mirrorList.dataset.activeMirror === trigger.dataset.mirrorTrigger && !mirrorList.hidden));
+    bindOnce(trigger, 'keydown', event => {
+      if (trigger.tagName === 'A' && event.key === ' ' && !event.repeat
+        && !event.altKey && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        trigger.click();
+      }
+    });
+    bindOnce(trigger, 'click', (event) => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       event.preventDefault();
       const mirrorList = document.querySelector('[data-mirror-list]');
       const isActive = mirrorList?.dataset.activeMirror === trigger.dataset.mirrorTrigger && !mirrorList.hidden;
@@ -180,43 +384,89 @@ function bindControls() {
         return;
       }
 
-      showMirrorList(trigger.dataset.mirrorTrigger);
+      showMirrorList(trigger.dataset.mirrorTrigger, trigger);
     });
   });
 
+  document.querySelectorAll('[data-mirror-close]').forEach(button => bindOnce(button, 'click', hideMirrorList));
+
   document.querySelectorAll('[data-sponsor-toggle]').forEach((trigger) => {
-    trigger.addEventListener('click', toggleSponsorPopup);
+    bindOnce(trigger, 'click', toggleSponsorPopup);
   });
 
   document.querySelectorAll('[data-sponsor-close]').forEach((trigger) => {
-    trigger.addEventListener('click', () => setSponsorPopup(false));
+    bindOnce(trigger, 'click', () => setSponsorPopup(false));
   });
 
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') setSponsorPopup(false);
+  const sponsorModal = document.querySelector('[data-sponsor-modal]');
+  bindOnce(sponsorModal, 'cancel', (event) => {
+    event.preventDefault();
+    setSponsorPopup(false);
+  });
+  bindOnce(sponsorModal, 'close', () => {
+    if (!sponsorModal.open) setSponsorPopup(false);
+  });
+  bindOnce(sponsorModal, 'click', (event) => {
+    if (event.target === sponsorModal) setSponsorPopup(false);
   });
 
-  document.getElementById('visitor-ip-check')?.addEventListener('click', showVisitorIp);
+  bindOnce(document.getElementById('visitor-ip-check'), 'click', showVisitorIp);
 }
 
 function detectInitialLanguage() {
   const queryLanguage = new URLSearchParams(window.location.search).get('lang');
-  return queryLanguage === 'ko' ? 'ko' : readPreference('keimirror-language', 'en');
+  return ['en', 'ko'].includes(queryLanguage) ? queryLanguage : readPreference('keimirror-language', 'en');
+}
+
+let ipState = 'idle';
+let visitorAddress = '';
+
+function renderVisitorIp() {
+  const status = document.getElementById('visitor-ip');
+  const button = document.getElementById('visitor-ip-check');
+  const dictionary = translations[root.lang] || translations.en;
+  if (status) {
+    status.setAttribute('role', 'status');
+    status.dataset.ipState = ipState;
+    status.textContent = ipState === 'success' ? visitorAddress
+      : dictionary[{ idle: 'ipIdle', pending: 'checkingIp', failure: 'ipUnknown' }[ipState]];
+  }
+  if (button) button.disabled = ipState === 'pending';
+}
+
+function validIpAddress(value) {
+  if (typeof value !== 'string' || value.length > 45) return false;
+  if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(value)) {
+    return value.split('.').every(part => Number(part) <= 255);
+  }
+  if (!value.includes(':') || !/^[a-fA-F0-9:.]+$/.test(value)) return false;
+  try {
+    // Let the browser's URL parser validate IPv6 compression and embedded IPv4.
+    return new URL(`http://[${value}]/`).hostname.startsWith('[');
+  } catch {
+    return false;
+  }
 }
 
 async function showVisitorIp() {
-  const visitorIp = document.getElementById('visitor-ip');
-  if (!visitorIp) return;
-
-  visitorIp.textContent = translations[root.lang]?.checkingIp || translations.en.checkingIp;
-
+  if (!document.getElementById('visitor-ip') || ipState === 'pending') return;
+  ipState = 'pending';
+  renderVisitorIp();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const response = await fetch('https://api.ipify.org?format=json');
+    const response = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
     if (!response.ok) throw new Error('IP lookup failed');
     const data = await response.json();
-    visitorIp.textContent = data.ip || translations[root.lang]?.ipUnknown || translations.en.ipUnknown;
+    if (!validIpAddress(data?.ip)) throw new Error('Invalid IP response');
+    visitorAddress = data.ip;
+    ipState = 'success';
   } catch {
-    visitorIp.textContent = translations[root.lang]?.ipUnknown || translations.en.ipUnknown;
+    visitorAddress = '';
+    ipState = 'failure';
+  } finally {
+    clearTimeout(timeout);
+    renderVisitorIp();
   }
 }
 
@@ -227,7 +477,7 @@ function markAppReady() {
 
 async function initialize() {
   try {
-    await loadComponents();
+    if (document.body.dataset.rendered !== 'true') await loadComponents();
     bindControls();
     applyTheme(readPreference('keimirror-theme', 'auto'));
     applyLanguage(detectInitialLanguage());
