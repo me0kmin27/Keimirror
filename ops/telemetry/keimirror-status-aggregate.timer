@@ -2,9 +2,9 @@
 Description=Schedule Keimirror aggregate collection
 
 [Timer]
-OnBootSec=30s
-OnUnitActiveSec=15s
-AccuracySec=1s
+# Wall-clock ticks do not add oneshot runtime to the target interval.
+OnCalendar=*-*-* *:*:*
+AccuracySec=10ms
 Unit=keimirror-status-aggregate.service
 
 [Install]

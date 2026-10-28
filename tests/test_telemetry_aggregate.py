@@ -29,7 +29,7 @@ def metric():
 
 
 def snapshot(mirror='mirror1') -> dict[str, Any]:
-    return dict(schema_version=1, mirror_id=mirror, collected_at=NOW, interval_seconds=15,
+    return dict(schema_version=1, mirror_id=mirror, collected_at=NOW, interval_seconds=1,
                 projects={key: dict(**metric(), repositories=[dict(id=r, **metric()) for r in ids])
                           for key, ids in GROUPS.items()})
 
@@ -43,6 +43,30 @@ class AggregationTests(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
+
+    def test_aggregate_advertises_one_second_refresh(self):
+        result = self.load().collect(lambda mirror: snapshot(mirror), now=NOW)
+        self.assertEqual(result['refresh_seconds'], 1)
+
+    def test_legacy_cadence_keeps_status_but_never_relays_long_window_rates(self):
+        module = self.load()
+        for interval in (1, 15):
+            with self.subTest(interval=interval):
+                value = snapshot()
+                value['interval_seconds'] = interval
+                project = value['projects']['archlinux']
+                for row in (project, project['repositories'][0]):
+                    row.update(state='syncing', last_success_at=NOW - 100,
+                               sync_rx_bps=300, sync_tx_bps=60, rates_observed_at=NOW)
+                clean = module.sanitize_snapshot(value, 'mirror1', NOW)
+                self.assertEqual(clean['interval_seconds'], interval)
+                project = clean['projects']['archlinux']
+                for row in (project, project['repositories'][0]):
+                    self.assertEqual(row['state'], 'syncing')
+                    self.assertEqual(row['last_success_at'], NOW - 100)
+                    self.assertEqual(row['sync_rx_bps'], 300 if interval == 1 else None)
+                    self.assertEqual(row['sync_tx_bps'], 60 if interval == 1 else None)
+                    self.assertEqual(row['rates_observed_at'], NOW if interval == 1 else None)
 
     def test_valid_snapshot_is_allowlisted_not_relayed_verbatim(self):
         module = self.load()
@@ -129,6 +153,24 @@ class AggregationTests(unittest.TestCase):
         self.assertEqual(result['mirrors']['mirror1']['snapshot']['collected_at'], NOW)
         self.assertTrue(result['mirrors']['mirror2']['available'])
         self.assertNotIn('PRIVATE', json.dumps(result))
+
+    def test_runtime_freshness_is_rechecked_after_serial_fetches(self):
+        module = self.load()
+        with patch.object(module.time, 'time', side_effect=[NOW, NOW + 6]):
+            result = module.collect(lambda mirror: snapshot(mirror))
+        self.assertEqual(result['generated_at'], NOW + 6)
+        for entry in result['mirrors'].values():
+            self.assertFalse(entry['available'])
+            self.assertEqual(entry['snapshot']['collected_at'], NOW)
+
+    def test_source_freshness_is_at_most_five_seconds(self):
+        module = self.load()
+        for age, available in ((0, True), (1, True), (5, True), (5.001, False), (15, False)):
+            with self.subTest(age=age):
+                result = module.collect(lambda mirror: snapshot(mirror), now=NOW + age)
+                for entry in result['mirrors'].values():
+                    self.assertIs(entry['available'], available)
+                    self.assertEqual(entry['snapshot']['collected_at'], NOW)
 
     def test_stale_or_corrupt_cache_never_becomes_live_data(self):
         module = self.load()

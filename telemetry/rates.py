@@ -21,6 +21,8 @@ MAX_OUTPUT = 2 * 1024 * 1024
 MAX_PROCESSES = 16384
 MAX_SOCKETS = 4096
 MAX_COUNTER = 2**53 - 1
+# A delayed tick is unknown, never a long-window rate labelled as live.
+MAX_SAMPLE_SECONDS = 2
 
 
 def read_ss():
@@ -160,6 +162,9 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
                  {os.path.normpath(j['path']), os.path.realpath(j['path'])})
                 for rid, j in config['repositories'].items()]
         records = parse_ss((ss_reader or read_ss)())
+        # Production uses the actual observation time, not collector startup.
+        # An explicit timestamp keeps isolated fixtures deterministic.
+        now = time.time() if now is None else now
         sockets = {rid: {} for rid in rows}
         invalid = set()
         cookie_repos = {}
@@ -223,7 +228,7 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
         if not isinstance(previous, dict) or previous.get('boot') != boot:
             return rows, state
         old_at = previous.get('at')
-        if not isinstance(old_at, (int, float)) or isinstance(old_at, bool) or not 0 <= old_at <= MAX_COUNTER or not math.isfinite(old_at) or not 0 < now-old_at <= 30:
+        if not isinstance(old_at, (int, float)) or isinstance(old_at, bool) or not 0 <= old_at <= MAX_COUNTER or not math.isfinite(old_at) or not 0 < now-old_at <= MAX_SAMPLE_SECONDS:
             return rows, state
         dt = now-old_at
         old_repos = previous.get('repositories')

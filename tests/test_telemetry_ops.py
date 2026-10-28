@@ -51,11 +51,24 @@ class TelemetryOperationsTests(unittest.TestCase):
         collector = (base / 'keimirror-status-collector.service').read_text()
         self.assertNotIn('sizes.py', collector)
         self.assertIn('RestrictAddressFamilies=AF_UNIX AF_NETLINK', collector)
-        self.assertIn('OnUnitActiveSec=15s', (base / 'keimirror-status-collector.timer').read_text())
+        self.assertIn('OnCalendar=*-*-* *:*:*', (base / 'keimirror-status-collector.timer').read_text())
         aggregate = (base / 'keimirror-status-aggregate.service').read_text()
         self.assertIn('User=keimirror-status', aggregate)
         self.assertNotIn('DynamicUser=yes', aggregate)  # private StateDirectory would block nginx read access
-        self.assertIn('OnUnitActiveSec=15s', (base / 'keimirror-status-aggregate.timer').read_text())
+        self.assertIn('OnCalendar=*-*-* *:*:*', (base / 'keimirror-status-aggregate.timer').read_text())
+
+    def test_one_second_timers_have_precise_scheduling_and_bounded_cpu_headroom(self):
+        base = ROOT / 'ops/telemetry'
+        for name, quota in (('collector', '100%'), ('aggregate', '50%')):
+            with self.subTest(name=name):
+                timer = (base / f'keimirror-status-{name}.timer').read_text()
+                self.assertIn('OnCalendar=*-*-* *:*:*\n', timer)
+                self.assertIn('AccuracySec=10ms\n', timer)
+                self.assertNotIn('OnUnitInactiveSec=', timer)
+                self.assertNotIn('OnUnitActiveSec=', timer)
+                self.assertNotIn('OnBootSec=', timer)
+                service = (base / f'keimirror-status-{name}.service').read_text()
+                self.assertIn(f'CPUQuota={quota}\n', service)
 
     def test_backend_and_ops_are_not_uploaded_as_public_static_files(self):
         workflow = (ROOT / '.github/workflows/deploy-on-pr-merge.yml').read_text()

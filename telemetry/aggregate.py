@@ -88,6 +88,11 @@ def sanitize_snapshot(value, mirror_id, now) -> dict[str, Any]:
                 raise ValueError('Invalid repository identity')
             by_id[row['id']] = dict(id=row['id'], **clean_metric(row, now))
         clean['repositories'] = [by_id[repo] for repo in repositories]
+        # Rollout compatibility: retain legacy status, but its 15-second rates
+        # are not latest-sample telemetry. Never relabel those values as 1 Hz.
+        if interval != 1:
+            for metric in (clean, *clean['repositories']):
+                metric.update(sync_rx_bps=None, sync_tx_bps=None, rates_observed_at=None)
         states = {row['state'] for row in clean['repositories']}
         if clean['state'] != next(state for state in STATES if state in states):
             raise ValueError('Inconsistent group state')
@@ -129,6 +134,7 @@ def fetch_snapshot(mirror_id, opener=None):
 
 
 def collect(fetcher=None, previous=None, now=None):
+    realtime = now is None
     now = time.time() if now is None else now
     fetcher = fetch_snapshot if fetcher is None else fetcher
     mirrors = {}
@@ -143,13 +149,17 @@ def collect(fetcher=None, previous=None, now=None):
         try:
             current = sanitize_snapshot(fetcher(mirror_id), mirror_id, now)
             if old is None or current['collected_at'] >= old['collected_at']:
-                entry = {'available': now - current['collected_at'] <= 60, 'snapshot': current}
+                entry = {'available': now - current['collected_at'] <= 5, 'snapshot': current}
         except Exception:
             # Never relay transport/parser exceptions, raw data or a new timestamp
             # for the retained old sample. The other mirror remains independent.
             pass
         mirrors[mirror_id] = entry
-    return {'schema_version': 1, 'generated_at': now, 'refresh_seconds': 15, 'mirrors': mirrors}
+    published_at = time.time() if realtime else now
+    for entry in mirrors.values():
+        if entry['available']:
+            entry['available'] = published_at - entry['snapshot']['collected_at'] <= 5
+    return {'schema_version': 1, 'generated_at': published_at, 'refresh_seconds': 1, 'mirrors': mirrors}
 
 
 def publish(path, value):

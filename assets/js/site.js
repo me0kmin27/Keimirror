@@ -158,7 +158,7 @@ function validTelemetryMetric(metric, identityKey) {
 
 function validTelemetrySnapshot(snapshot, mirrorId) {
   if (!telemetryKeys(snapshot, ['schema_version', 'mirror_id', 'collected_at', 'interval_seconds', 'projects'])
-    || snapshot.schema_version !== 1 || snapshot.mirror_id !== mirrorId || snapshot.interval_seconds !== 15
+    || snapshot.schema_version !== 1 || snapshot.mirror_id !== mirrorId || ![1, 15].includes(snapshot.interval_seconds)
     || !telemetryTimestamp(snapshot.collected_at) || !telemetryKeys(snapshot.projects, Object.keys(telemetryGroups))) return false;
   return Object.entries(telemetryGroups).every(([id, repositoryIds]) => {
     const project = snapshot.projects[id];
@@ -172,7 +172,7 @@ function validTelemetrySnapshot(snapshot, mirrorId) {
 
 function validatedTelemetry(data) {
   if (!telemetryKeys(data, ['schema_version', 'generated_at', 'refresh_seconds', 'mirrors'])
-    || data.schema_version !== 1 || data.refresh_seconds !== 15 || !telemetryTimestamp(data.generated_at)
+    || data.schema_version !== 1 || ![1, 15].includes(data.refresh_seconds) || !telemetryTimestamp(data.generated_at)
     || !telemetryKeys(data.mirrors, telemetryMirrorIds)) throw new Error('Invalid telemetry');
   const mirrors = {};
   for (const id of telemetryMirrorIds) {
@@ -226,7 +226,7 @@ export function renderTelemetry() {
         + (project && freshness !== 'live' ? ` · ${dictionary.telemetryFreshness_stale}` : '');
       for (const direction of ['rx', 'tx']) {
         const rate = cell.querySelector(`[data-sync-${direction}]`);
-        const value = freshness === 'live' && telemetryRecent(project?.rates_observed_at, now)
+        const value = freshness === 'live' && snapshot.interval_seconds === 1 && telemetryRecent(project?.rates_observed_at, now, 3)
           ? project[`sync_${direction}_bps`] : null;
         rate.textContent = value == null ? dictionary.telemetryUnavailable : `${telemetryBytes(value)}/s`;
         rate.title = `${direction.toUpperCase()}: ${dictionary.telemetryObservedTraffic}`;
@@ -235,8 +235,9 @@ export function renderTelemetry() {
   }
 }
 
-function telemetryRecent(timestamp, now) {
-  return timestamp !== null && timestamp !== undefined && now - timestamp <= 60 && timestamp - now <= 30;
+// Legacy interval metadata never extends live freshness. Allow only 1s clock skew.
+function telemetryRecent(timestamp, now, maxAge = 5) {
+  return timestamp !== null && timestamp !== undefined && now - timestamp <= maxAge && timestamp - now <= 1;
 }
 
 let telemetryStarted = false;
@@ -292,7 +293,7 @@ function telemetryVisibility() {
     return;
   }
   fetchTelemetry();
-  telemetryPoll = setInterval(fetchTelemetry, 15000);
+  telemetryPoll = setInterval(fetchTelemetry, 1000);
   telemetryAgeTimer = setInterval(() => renderTelemetry(), 1000);
 }
 
