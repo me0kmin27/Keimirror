@@ -633,6 +633,7 @@ def validate_config(config):
 
 def collect(config, state_dir, *, now=None, proc_root: str | Path = "/proc", max_read=MAX_READ):
     validate_config(config)
+    sample_now = now  # None asks the TCP sampler to timestamp its actual read.
     now = time.time() if now is None else now
     if not timestamp(now, MAX_SAFE_INTEGER) or type(max_read) is not int or not 32 <= max_read <= MAX_READ:
         raise ValueError("invalid collection parameters")
@@ -708,7 +709,7 @@ def collect(config, state_dir, *, now=None, proc_root: str | Path = "/proc", max
             row[source + "_bytes_60s"] = delivery[source][rid] if delivery[source] is not None else None
         row["traffic_observed_since"] = observed_since
         rows[rid] = dict(id=rid, **row)
-    sampled, private['rates'] = rates.sample(config, private.get('rates'), now=now, proc_root=proc_root)
+    sampled, private['rates'] = rates.sample(config, private.get('rates'), now=sample_now, proc_root=proc_root)
     for rid, row in rows.items():
         if row['state'] == 'syncing':
             row.update(sampled[rid])
@@ -718,7 +719,7 @@ def collect(config, state_dir, *, now=None, proc_root: str | Path = "/proc", max
     atomic_json(state_dir / "collector.json", private)
     return {
         "schema_version": 1, "mirror_id": config["mirror_id"], "collected_at": now,
-        "interval_seconds": 15,
+        "interval_seconds": 1,
         "projects": {project: group_metrics([rows[rid] for rid in ids]) for project, ids in PROJECTS.items()},
     }
 

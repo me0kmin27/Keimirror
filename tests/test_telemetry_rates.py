@@ -35,18 +35,52 @@ class RateTests(unittest.TestCase):
                 f'uid:{os.getuid()} ino:{inode} sk:{cookie} cgroup:/synthetic\n'
                 f'\t cubic bytes_sent:{sent} bytes_received:{received} segs_out:10\n')
 
-    def sample(self, text, previous=None, now=100):
+    def sample(self, text, previous=None, now=100.0):
         self.assertIsNotNone(importlib.util.find_spec('telemetry.rates'), 'attributable sampler missing')
         rates = importlib.import_module('telemetry.rates')
         return rates.sample(self.config, previous, now=now, proc_root=self.proc, ss_reader=lambda: text)
+
+    def test_latest_sample_rejects_long_gap_and_recovers_without_smoothing(self):
+        _, old = self.sample(self.socket())
+        for elapsed in (2.001, 15, 30):
+            with self.subTest(elapsed=elapsed):
+                rows, state = self.sample(self.socket(160, 500), old, 100 + elapsed)
+                self.assertEqual(rows['a'], {'sync_rx_bps': None, 'sync_tx_bps': None,
+                                             'rates_observed_at': None})
+                self.assertEqual(state['at'], 100 + elapsed)
+                rows, _ = self.sample(self.socket(170, 520), state, 101 + elapsed)
+                self.assertEqual(rows['a'], {'sync_rx_bps': 20, 'sync_tx_bps': 10,
+                                             'rates_observed_at': 101 + elapsed})
+        for elapsed in (0.75, 1, 1.25, 2):
+            with self.subTest(elapsed=elapsed):
+                rows, _ = self.sample(self.socket(160, 500), old, 100 + elapsed)
+                self.assertEqual(rows['a']['sync_rx_bps'], 300 / elapsed)
+                self.assertEqual(rows['a']['sync_tx_bps'], 60 / elapsed)
+
+    def test_runtime_timestamp_is_taken_at_socket_observation(self):
+        from telemetry import rates
+        clock = [100.0]
+        def reader():
+            clock[0] += 0.25  # Sampling work is not a zero-duration operation.
+            return self.socket()
+        with mock.patch.object(rates.time, 'time', side_effect=lambda: clock[0]):
+            _, old = rates.sample(self.config, None, now=None, proc_root=self.proc, ss_reader=reader)
+            self.assertEqual(old['at'], 100.25)
+            clock[0] = 101.0
+            rows, state = rates.sample(self.config, old, now=None, proc_root=self.proc,
+                                       ss_reader=lambda: self.socket(160, 500))
+        self.assertEqual(state['at'], 101.0)
+        self.assertEqual(rows['a']['sync_rx_bps'], 400)
+        self.assertEqual(rows['a']['sync_tx_bps'], 80)
+        self.assertEqual(rows['a']['rates_observed_at'], 101.0)
 
     def test_ssl_ancestry_deltas_and_private_sanitization(self):
         self.process(11, ['rsync-ssl', 'host::repo', '/data/a'], parent=10)
         self.process(12, ['openssl', 's_client', '-connect', 'host:873'], parent=11)
         rows, old = self.sample(self.socket(pid=12))
         self.assertIsNone(rows['a']['sync_rx_bps'])
-        rows, state = self.sample(self.socket(160, 500, pid=12), old, 110)
-        self.assertEqual(rows['a'], {'sync_rx_bps': 30, 'sync_tx_bps': 6, 'rates_observed_at': 110})
+        rows, state = self.sample(self.socket(160, 500, pid=12), old, 101)
+        self.assertEqual(rows['a'], {'sync_rx_bps': 300, 'sync_tx_bps': 60, 'rates_observed_at': 101})
         encoded = json.dumps(state)
         for secret in ('127.0.0.1', '/jobs', '/data', 'openssl', 'host', 'cgroup'):
             self.assertNotIn(secret, encoded)
@@ -54,7 +88,7 @@ class RateTests(unittest.TestCase):
     def test_wrong_attribution_and_ambiguous_ancestry_unknown(self):
         _, old = self.sample(self.socket())
         self.process(11, ['rsync', 'host::repo', '/data/b'], parent=10)
-        rows, _ = self.sample(self.socket(150, 500), old, 110)
+        rows, _ = self.sample(self.socket(150, 500), old, 101)
         self.assertIsNone(rows['a']['sync_rx_bps'])
         self.assertIsNone(rows['b']['sync_rx_bps'])
 
@@ -63,20 +97,20 @@ class RateTests(unittest.TestCase):
         for text in (self.socket(90, 500), self.socket(150, 500).replace('bytes_sent:150', ''),
                      self.socket(150, 500, cookie='a2'), self.socket(150, 500)+self.socket(pid=11, cookie='b1', inode=43)):
             with self.subTest(text=text):
-                rows, _ = self.sample(text, old, 110)
+                rows, _ = self.sample(text, old, 101)
                 self.assertIsNone(rows['a']['sync_rx_bps'])
 
     def test_shared_with_unattributed_process_is_unknown(self):
         self.process(20, ['curl', 'host'])
         text = self.socket().replace('fd=3))', 'fd=3),("curl",pid=20,fd=4))')
         _, old = self.sample(text)
-        rows, _ = self.sample(text, old, 110)
+        rows, _ = self.sample(text, old, 101)
         self.assertIsNone(rows['a']['sync_rx_bps'])
 
     def test_uid_mismatch_in_socket_is_unknown(self):
         text = self.socket().replace(f'uid:{os.getuid()}', f'uid:{os.getuid()+1}')
         _, old = self.sample(text)
-        rows, _ = self.sample(text, old, 110)
+        rows, _ = self.sample(text, old, 101)
         self.assertIsNone(rows['a']['sync_rx_bps'])
 
     def test_restarts_gaps_boot_reset_and_malformed_cache(self):
@@ -84,39 +118,39 @@ class RateTests(unittest.TestCase):
         for at in (100, 99, 131):
             self.assertIsNone(self.sample(self.socket(), old, at)[0]['a']['sync_rx_bps'])
         self.process(11, ['rsync', 'host::repo', '/data/a'], parent=10, ticks=51)
-        self.assertIsNone(self.sample(self.socket(), old, 110)[0]['a']['sync_rx_bps'])
+        self.assertIsNone(self.sample(self.socket(), old, 101)[0]['a']['sync_rx_bps'])
         (self.proc/'sys/kernel/random/boot_id').write_text('00000000-0000-4000-8000-000000000002')
-        self.assertIsNone(self.sample(self.socket(), old, 110)[0]['a']['sync_rx_bps'])
+        self.assertIsNone(self.sample(self.socket(), old, 101)[0]['a']['sync_rx_bps'])
         for bad in (None, [], {'boot': 1, 'at': 'bad'}, {'repositories': []}):
-            self.assertIsNone(self.sample(self.socket(), bad, 110)[0]['a']['sync_rx_bps'])
+            self.assertIsNone(self.sample(self.socket(), bad, 101)[0]['a']['sync_rx_bps'])
 
     def test_serving_and_probe_descendants_excluded(self):
         for args in (['rsync', '--server', '/data/a'], ['rsync', '--daemon'], ['curl', 'host']):
             self.process(11, args, parent=10)
             _, old = self.sample(self.socket())
-            rows, _ = self.sample(self.socket(), old, 110)
+            rows, _ = self.sample(self.socket(), old, 101)
             self.assertIsNone(rows['a']['sync_rx_bps'])
 
     def test_shared_socket_deduplicated_and_true_zero(self):
         self.process(12, ['ssh', 'host'], parent=11)
         text = self.socket().replace('fd=3))', 'fd=3),("ssh",pid=12,fd=4))')
         _, old = self.sample(text)
-        rows, _ = self.sample(text.replace('bytes_received:200', 'bytes_received:500'), old, 110)
-        self.assertEqual(rows['a']['sync_rx_bps'], 30)
+        rows, _ = self.sample(text.replace('bytes_received:200', 'bytes_received:500'), old, 101)
+        self.assertEqual(rows['a']['sync_rx_bps'], 300)
         self.assertEqual(rows['a']['sync_tx_bps'], 0)
 
     def test_parse_failure_and_bounded_proc_reset(self):
         from telemetry import rates
         _, old = self.sample(self.socket())
         for text in ('nonsense', '\t bytes_sent:3', self.socket()+'broken\n'):
-            self.assertEqual(self.sample(text, old, 110)[1], {})
+            self.assertEqual(self.sample(text, old, 101)[1], {})
         with mock.patch.object(rates, 'MAX_PROCESSES', 1):
-            self.assertEqual(self.sample(self.socket(), old, 110)[1], {})
+            self.assertEqual(self.sample(self.socket(), old, 101)[1], {})
 
     def test_corrupt_extreme_timestamp_and_owner_cache_never_raise(self):
         _, old = self.sample(self.socket())
         old['at'] = 10**400
-        self.assertIsNone(self.sample(self.socket(), old, 110)[0]['a']['sync_rx_bps'])
+        self.assertIsNone(self.sample(self.socket(), old, 101)[0]['a']['sync_rx_bps'])
 
     def test_ss_reader_loopback_format_and_payload(self):
         import socket
@@ -164,8 +198,8 @@ class RateTests(unittest.TestCase):
         unknown = self.socket(cookie='bb', inode=21727).replace('users:(("rsync",pid=11,fd=3)) ', '')
         rows, old = self.sample(self.socket()+unknown)
         self.assertIsNone(rows['a']['sync_rx_bps'])
-        rows, state = self.sample(self.socket(160, 500)+unknown, old, 110)
-        self.assertEqual(rows['a'], {'sync_rx_bps': 30, 'sync_tx_bps': 6, 'rates_observed_at': 110})
+        rows, state = self.sample(self.socket(160, 500)+unknown, old, 101)
+        self.assertEqual(rows['a'], {'sync_rx_bps': 300, 'sync_tx_bps': 60, 'rates_observed_at': 101})
         self.assertIsNone(rows['b']['sync_rx_bps'])
         self.assertEqual(set(state['repositories']), {'a'})
 
@@ -179,9 +213,9 @@ class RateTests(unittest.TestCase):
                 self.assertEqual(len(rates.parse_ss(text)), 2)
                 rows, old = self.sample(text)
                 self.assertIsNone(rows['a']['sync_rx_bps'])
-                rows, state = self.sample(self.socket(160, 500)+unknown, old, 110)
-                self.assertEqual(rows['a'], {'sync_rx_bps': 30, 'sync_tx_bps': 6,
-                                             'rates_observed_at': 110})
+                rows, state = self.sample(self.socket(160, 500)+unknown, old, 101)
+                self.assertEqual(rows['a'], {'sync_rx_bps': 300, 'sync_tx_bps': 60,
+                                             'rates_observed_at': 101})
                 self.assertIsNone(rows['b']['sync_rx_bps'])
                 self.assertEqual(set(state['repositories']), {'a'})
 
@@ -194,7 +228,7 @@ class RateTests(unittest.TestCase):
                 text = self.socket()+header+'\n'
                 with self.assertRaisesRegex(ValueError, 'unrecognized socket row'):
                     rates.parse_ss(text)
-                rows, state = self.sample(text, old, 110)
+                rows, state = self.sample(text, old, 101)
                 self.assertEqual(state, {})
                 self.assertIsNone(rows['a']['sync_rx_bps'])
                 self.assertIsNone(rows['a']['sync_tx_bps'])
@@ -202,7 +236,7 @@ class RateTests(unittest.TestCase):
     def test_ownerless_only_samples_never_publish_zero(self):
         text = self.socket(cookie='bb', inode=21727).replace('users:(("rsync",pid=11,fd=3)) ', '')
         _, old = self.sample(text)
-        rows, state = self.sample(text, old, 110)
+        rows, state = self.sample(text, old, 101)
         self.assertEqual(state['repositories'], {})
         for row in rows.values():
             self.assertEqual(row, {'sync_rx_bps': None, 'sync_tx_bps': None, 'rates_observed_at': None})
@@ -215,11 +249,11 @@ class RateTests(unittest.TestCase):
         ownerless = self.socket().replace('users:(("rsync",pid=11,fd=3)) ', '')
         for text in (ownerless+remaining+sibling, self.socket()+ownerless+remaining+sibling):
             with self.subTest(text=text):
-                rows, state = self.sample(text, old, 110)
+                rows, state = self.sample(text, old, 101)
                 self.assertIsNone(rows['a']['sync_rx_bps'])
                 self.assertEqual(rows['b']['sync_rx_bps'], 0)
                 self.assertNotIn('a', state['repositories'])
-                rows, _ = self.sample(remaining+sibling, state, 120)
+                rows, _ = self.sample(remaining+sibling, state, 102)
                 self.assertIsNone(rows['a']['sync_rx_bps'])
 
     def test_duplicate_cookie_with_unattributed_owner_invalidates_observed_repo(self):
@@ -229,7 +263,7 @@ class RateTests(unittest.TestCase):
             for text in (self.socket()+conflicting, conflicting+self.socket()):
                 with self.subTest(text=text):
                     _, old = self.sample(text)
-                    rows, state = self.sample(text, old, 110)
+                    rows, state = self.sample(text, old, 101)
                     self.assertIsNone(rows['a']['sync_rx_bps'])
                     self.assertNotIn('a', state['repositories'])
 
@@ -240,7 +274,7 @@ class RateTests(unittest.TestCase):
         for text in (self.socket()+ambiguous, ambiguous+self.socket()):
             with self.subTest(text=text):
                 _, old = self.sample(text)
-                rows, state = self.sample(text, old, 110)
+                rows, state = self.sample(text, old, 101)
                 for rid in ('a', 'b'):
                     self.assertIsNone(rows[rid]['sync_rx_bps'])
                     self.assertNotIn(rid, state['repositories'])
@@ -249,7 +283,7 @@ class RateTests(unittest.TestCase):
         self.process(20, ['rsync', 'host::repo', '/data/b'])
         text = self.socket()+self.socket(pid=20)
         _, old = self.sample(text)
-        rows, _ = self.sample(text, old, 110)
+        rows, _ = self.sample(text, old, 101)
         self.assertIsNone(rows['a']['sync_rx_bps'])
         self.assertIsNone(rows['b']['sync_rx_bps'])
 
@@ -259,7 +293,7 @@ class RateTests(unittest.TestCase):
         def reader():
             self.process(11, ['rsync', 'host::repo', '/data/a'], parent=10, ticks=51)
             return self.socket()
-        rows, state = rates.sample(self.config, old, now=110, proc_root=self.proc, ss_reader=reader)
+        rows, state = rates.sample(self.config, old, now=101, proc_root=self.proc, ss_reader=reader)
         self.assertIsNone(rows['a']['sync_rx_bps'])
         self.assertEqual(state, {})
 
@@ -270,13 +304,13 @@ class RateTests(unittest.TestCase):
             path = self.proc/'11/stat'
             path.write_text(path.read_text().replace(' S ', ' R '))
             return self.socket(150, 500)
-        rows, _ = rates.sample(self.config, old, now=110, proc_root=self.proc, ss_reader=reader)
-        self.assertEqual(rows['a']['sync_rx_bps'], 30)
+        rows, _ = rates.sample(self.config, old, now=101, proc_root=self.proc, ss_reader=reader)
+        self.assertEqual(rows['a']['sync_rx_bps'], 300)
 
     def test_partial_proc_enumeration_never_returns_zero(self):
         _, old = self.sample(self.socket())
         (self.proc/'99').mkdir()
-        rows, state = self.sample(self.socket(), old, 110)
+        rows, state = self.sample(self.socket(), old, 101)
         self.assertIsNone(rows['a']['sync_rx_bps'])
         self.assertEqual(state, {})
 

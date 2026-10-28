@@ -87,14 +87,23 @@ class CollectorTests(unittest.TestCase):
             first = self.tick()
             self.assertIsNone(first['projects']['gentoo']['sync_rx_bps'])
         with mock.patch('telemetry.rates.read_ss', return_value=text.replace('bytes_received:200', 'bytes_received:500')):
-            second = self.tick(now=self.now+15)
-        self.assertEqual(self.repo(second, 'gentoo')['sync_rx_bps'], 20)
-        self.assertEqual(second['projects']['gentoo']['sync_rx_bps'], 20)
+            second = self.tick(now=self.now+1)
+        self.assertEqual(self.repo(second, 'gentoo')['sync_rx_bps'], 300)
+        self.assertEqual(second['projects']['gentoo']['sync_rx_bps'], 300)
         self.assertIsNone(self.repo(second, 'gentoo-portage')['sync_rx_bps'])
-        self.assertEqual(second['projects']['gentoo']['rates_observed_at'], self.now+15)
+        self.assertEqual(second['projects']['gentoo']['rates_observed_at'], self.now+1)
         private = json.loads((self.state/'collector.json').read_text())
         self.assertIn('rates', private)
         self.assertNotIn('127.0.0.1', json.dumps(private))
+
+    def test_runtime_collection_uses_socket_sample_clock_not_tick_start(self):
+        self.process(123, ['/bin/sh', self.config['repositories']['gentoo']['script']])
+        with mock.patch.object(collector.time, 'time', side_effect=[self.now, self.now + 0.5]), \
+             mock.patch('telemetry.rates.read_ss', return_value=''):
+            snapshot = collector.collect(self.config, self.state, proc_root=self.proc)
+        private = json.loads((self.state / 'collector.json').read_text())
+        self.assertEqual(snapshot['collected_at'], self.now)
+        self.assertEqual(private['rates']['at'], self.now + 0.5)
 
     def test_group_rates_require_every_active_repository_only(self):
         active = dict(collector.empty_metrics(), state='syncing', sync_rx_bps=3,
@@ -690,7 +699,7 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(snapshot["mirror_id"], "mirror1")
         self.assertEqual(snapshot["collected_at"], self.now)
         self.assertEqual(snapshot["schema_version"], 1)
-        self.assertEqual(snapshot["interval_seconds"], 15)
+        self.assertEqual(snapshot["interval_seconds"], 1)
         self.assertEqual(set(snapshot["projects"]), set(GROUPS))
         rows = []
         for project, ids in GROUPS.items():

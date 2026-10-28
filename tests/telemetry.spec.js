@@ -27,10 +27,10 @@ function payload() {
       repositories: repositories.map(id => ({ id, ...metric() })),
     })]));
     mirrors[mirror] = { available: true, snapshot: {
-      schema_version: 1, mirror_id: mirror, collected_at: NOW, interval_seconds: 15, projects,
+      schema_version: 1, mirror_id: mirror, collected_at: NOW, interval_seconds: 1, projects,
     } };
   }
-  return { schema_version: 1, generated_at: NOW, refresh_seconds: 15, mirrors };
+  return { schema_version: 1, generated_at: NOW, refresh_seconds: 1, mirrors };
 }
 function cell(page, project = 'archlinux', mirror = 'mirror1') {
   return page.locator(`[data-project="${project}"] [data-mirror-cell="${mirror}"]`);
@@ -42,9 +42,70 @@ async function openFixture(page, data = payload()) {
   await expect(page.locator('body')).toHaveClass('app-ready');
 }
 
+for (const [refresh, interval] of [[1, 1], [15, 15], [1, 15], [15, 1]]) {
+  test(`accepts ${refresh}/${interval} second metadata without relaxing freshness`, async ({ page }) => {
+    const data = payload();
+    data.refresh_seconds = refresh;
+    for (const mirror of Object.values(data.mirrors)) mirror.snapshot.interval_seconds = interval;
+    Object.assign(data.mirrors.mirror1.snapshot.projects.archlinux, {
+      sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW,
+    });
+    await openFixture(page, data);
+    await expect(cell(page)).toHaveAttribute('data-freshness', 'live');
+    await expect(cell(page).locator('[data-sync-rx]')).toHaveText(interval === 1 ? '2 KiB/s' : '—', { timeout: 500 });
+    await page.clock.fastForward(4001);
+    await expect(cell(page).locator('[data-sync-rx]')).toHaveText('—');
+    await page.clock.fastForward(2000);
+    await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
+    await expect(cell(page).locator('[data-disk-usage]')).toHaveText('1 GiB');
+  });
+}
+
+test('exact freshness boundaries clear rates during a stalled poll without losing stored size', async ({ page }) => {
+  const data = payload();
+  Object.assign(data.mirrors.mirror1.snapshot.projects.archlinux, {
+    sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW,
+  });
+  await page.clock.install({ time: new Date(NOW * 1000) });
+  await page.clock.pauseAt(new Date(NOW * 1000));
+  let requests = 0;
+  await page.route(ENDPOINT, route => {
+    requests += 1;
+    if (requests === 1) return route.fulfill({ json: data });
+  });
+  await page.goto('/?lang=en');
+  await expect(cell(page).locator('[data-sync-rx]')).toHaveText('2 KiB/s');
+  await page.clock.runFor(3000);
+  await expect(cell(page).locator('[data-sync-rx]')).toHaveText('2 KiB/s');
+  expect(requests).toBe(2);
+  await page.clock.runFor(1000);
+  await expect(cell(page).locator('[data-sync-rx]')).toHaveText('—');
+  await expect(cell(page).locator('[data-sync-tx]')).toHaveText('—');
+  await page.clock.runFor(1000);
+  await expect(cell(page)).toHaveAttribute('data-freshness', 'live');
+  await page.clock.runFor(1000);
+  await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
+  await expect(cell(page).locator('[data-disk-usage]')).toHaveText('1 GiB');
+  await expect(cell(page).locator('[data-disk-usage]')).toHaveAttribute('title', 'Total project stored data · Stale');
+  expect(requests).toBe(2);
+});
+
+for (const value of [2, '1', null]) {
+  for (const scope of ['aggregate', 'mirror']) {
+    test(`rejects unsupported ${scope} interval ${JSON.stringify(value)}`, async ({ page }) => {
+      const data = payload();
+      if (scope === 'aggregate') data.refresh_seconds = value;
+      else data.mirrors.mirror1.snapshot.interval_seconds = value;
+      await openFixture(page, data);
+      await expect(cell(page)).toHaveAttribute('data-freshness', 'offline');
+      await expect(cell(page, 'archlinux', 'mirror2')).toHaveAttribute('data-freshness', scope === 'aggregate' ? 'offline' : 'live');
+    });
+  }
+}
+
 test('compact contract contains only browse, status, total stored size and observed rates', async ({ page }) => {
   const data = payload();
-  Object.assign(data.mirrors.mirror1.snapshot.projects.artix, { sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW - 5 });
+  Object.assign(data.mirrors.mirror1.snapshot.projects.artix, { sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW - 1 });
   await openFixture(page, data);
   const reading = cell(page, 'artix');
   await expect(page.locator('#projects details, #projects summary, [data-repository], [data-group-metrics], [data-sample-age], [data-freshness-note], [data-size-note], [data-telemetry-note], #projects time')).toHaveCount(0);
@@ -57,7 +118,7 @@ test('compact contract contains only browse, status, total stored size and obser
   await expect(reading).not.toContainText(/60 seconds|Repository scope|Collected|Details/);
 });
 
-for (const observed of [null, NOW - 61, NOW + 31]) {
+for (const observed of [null, NOW - 4, NOW - 61, NOW + 2, NOW + 31]) {
   test(`rates with untrusted observation ${observed} stay unknown`, async ({ page }) => {
     const data = payload();
     Object.assign(data.mirrors.mirror1.snapshot.projects.archlinux, {
@@ -69,10 +130,10 @@ for (const observed of [null, NOW - 61, NOW + 31]) {
   });
 }
 
-test('observed rates expire between polls and stale snapshots never show current traffic', async ({ page }) => {
+test('observed rates expire after three seconds even while polls return the same snapshot', async ({ page }) => {
   const data = payload();
   Object.assign(data.mirrors.mirror1.snapshot.projects.archlinux, {
-    sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW - 59,
+    sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW - 2,
   });
   await openFixture(page, data);
   await expect(cell(page).locator('[data-sync-rx]')).toHaveText('2 KiB/s');
@@ -255,6 +316,10 @@ test('unmeasured bytes and unobserved rates cannot become apparent measured zero
 });
 
 for (const [reason, change] of [
+  ['six second old snapshot', d => { d.mirrors.mirror1.snapshot.collected_at = NOW - 6; }],
+  ['six second old aggregate', d => { d.generated_at = NOW - 6; }],
+  ['two second future snapshot', d => { d.mirrors.mirror1.snapshot.collected_at = NOW + 2; }],
+  ['two second future aggregate', d => { d.generated_at = NOW + 2; }],
   ['old snapshot', d => { d.mirrors.mirror1.snapshot.collected_at = NOW - 61; }],
   ['future snapshot', d => { d.mirrors.mirror1.snapshot.collected_at = NOW + 31; }],
   ['failed aggregator fetch with retained snapshot', d => { d.mirrors.mirror1.available = false; }],
@@ -269,7 +334,7 @@ for (const [reason, change] of [
   });
 }
 
-test('polls every 15 seconds, retains old measurements on failure and recovers without losing focus', async ({ page }) => {
+test('polls every one second, retains old measurements on failure and recovers without losing focus', async ({ page }) => {
   await page.clock.install({ time: new Date(NOW * 1000) });
   let requests = 0;
   let fail = false;
@@ -283,19 +348,19 @@ test('polls every 15 seconds, retains old measurements on failure and recovers w
   await browse.focus();
   expect(requests).toBe(1);
   fail = true;
-  await page.clock.fastForward(15001);
+  await page.clock.fastForward(1001);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
   await expect(cell(page).locator('[data-sync-state]')).toHaveText('Stale');
   await expect(cell(page).locator('[data-disk-usage]')).toHaveText('1 GiB');
   expect(requests).toBe(2);
   await expect(browse).toBeFocused();
   fail = false;
-  await page.clock.fastForward(15001);
+  await page.clock.fastForward(1001);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'live');
   expect(requests).toBe(3);
   await expect(browse).toBeFocused();
   // Identical old snapshots age out even if the endpoint keeps replying 200.
-  await page.clock.fastForward(31000);
+  await page.clock.fastForward(4000);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
 });
 
@@ -314,6 +379,11 @@ test('hidden documents pause requests and demand an immediate fresh snapshot on 
   await expect(cell(page).locator('[data-sync-state]')).toHaveText('Paused');
   await page.clock.fastForward(45000);
   expect(requests).toBe(1);
+  await page.unroute(ENDPOINT);
+  const fresh = payload();
+  fresh.generated_at = NOW + 45;
+  for (const mirror of Object.values(fresh.mirrors)) mirror.snapshot.collected_at = NOW + 45;
+  await page.route(ENDPOINT, route => { requests += 1; return route.fulfill({ json: fresh }); });
   await page.evaluate(() => { window.testHidden = false; document.dispatchEvent(new Event('visibilitychange')); });
   await expect.poll(() => requests).toBe(2);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'live');
@@ -322,15 +392,16 @@ test('hidden documents pause requests and demand an immediate fresh snapshot on 
 test('a stalled request times out without overlapping and leaves unavailable rather than success', async ({ page }) => {
   let requests = 0;
   await page.clock.install({ time: new Date(NOW * 1000) });
+  await page.clock.pauseAt(new Date(NOW * 1000));
   await page.route(ENDPOINT, async () => { requests += 1; });
   await page.goto('/');
   await expect(cell(page)).toHaveAttribute('data-freshness', 'loading');
-  await page.clock.fastForward(7999);
+  await page.clock.runFor(7999);
   expect(requests).toBe(1);
   await page.clock.fastForward(2);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'offline');
   await expect(cell(page).locator('[data-sync-state]')).toHaveText('Unavailable');
-  await page.clock.fastForward(7000);
+  await page.clock.runFor(1000);
   await expect.poll(() => requests).toBe(2);
 });
 
@@ -363,9 +434,9 @@ for (const [states, expected, incorrect] of [
     await expect(reading).toHaveAttribute('data-sync-state', expected);
     project.state = incorrect;
     project.size_bytes = 0;
-    data.mirrors.mirror1.snapshot.collected_at = NOW + 15;
+    data.mirrors.mirror1.snapshot.collected_at = NOW + 1;
     data.mirrors.mirror2.snapshot.projects.artix.size_bytes = 4294967296;
-    await page.clock.fastForward(15001);
+    await page.clock.fastForward(1001);
     await expect(reading).toHaveAttribute('data-freshness', 'stale');
     await expect(reading.locator('[data-sync-state]')).toHaveText('Stale');
     await expect(reading.locator('[data-disk-usage]')).toHaveText('3 GiB');
