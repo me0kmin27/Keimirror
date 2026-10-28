@@ -42,6 +42,49 @@ async function openFixture(page, data = payload()) {
   await expect(page.locator('body')).toHaveClass('app-ready');
 }
 
+test('compact contract contains only browse, status, total stored size and observed rates', async ({ page }) => {
+  const data = payload();
+  Object.assign(data.mirrors.mirror1.snapshot.projects.artix, { sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW - 5 });
+  await openFixture(page, data);
+  const reading = cell(page, 'artix');
+  await expect(page.locator('#projects details, #projects summary, [data-repository], [data-group-metrics], [data-sample-age], [data-freshness-note], [data-size-note], [data-telemetry-note], #projects time')).toHaveCount(0);
+  await expect(reading.locator('[data-disk-usage]')).toHaveText('3 GiB');
+  await expect(reading.locator('[data-disk-usage]')).toHaveAttribute('title', 'Total project stored data');
+  await expect(reading.locator('[data-sync-rx]')).toHaveText('2 KiB/s');
+  await expect(reading.locator('[data-sync-tx]')).toHaveText('0 B/s');
+  await expect(reading.locator('[data-sync-rx]')).toHaveAttribute('title', 'RX: observed sync traffic, not server NIC or completed HTTP delivery');
+  await expect(cell(page).locator('[data-sync-rx]')).toHaveText('—');
+  await expect(reading).not.toContainText(/60 seconds|Repository scope|Collected|Details/);
+});
+
+for (const observed of [null, NOW - 61, NOW + 31]) {
+  test(`rates with untrusted observation ${observed} stay unknown`, async ({ page }) => {
+    const data = payload();
+    Object.assign(data.mirrors.mirror1.snapshot.projects.archlinux, {
+      sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: observed,
+    });
+    await openFixture(page, data);
+    await expect(cell(page).locator('[data-sync-rx]')).toHaveText('—');
+    await expect(cell(page).locator('[data-sync-tx]')).toHaveText('—');
+  });
+}
+
+test('observed rates expire between polls and stale snapshots never show current traffic', async ({ page }) => {
+  const data = payload();
+  Object.assign(data.mirrors.mirror1.snapshot.projects.archlinux, {
+    sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW - 59,
+  });
+  await openFixture(page, data);
+  await expect(cell(page).locator('[data-sync-rx]')).toHaveText('2 KiB/s');
+  await page.clock.fastForward(2001);
+  await expect(cell(page).locator('[data-sync-rx]')).toHaveText('—');
+  data.mirrors.mirror1.available = false;
+  data.mirrors.mirror1.snapshot.projects.archlinux.rates_observed_at = NOW;
+  await page.clock.fastForward(13000);
+  await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
+  await expect(cell(page).locator('[data-sync-tx]')).toHaveText('—');
+});
+
 test('a recovered development directory starts telemetry once its real project component becomes available', async ({ page }) => {
   const fs = require('node:fs');
   const path = require('node:path');
@@ -64,21 +107,18 @@ test('a recovered development directory starts telemetry once its real project c
   expect(requests).toBe(1);
 });
 
-test('accepted transfer warnings remain visible in the compact state and localized details', async ({ page }) => {
+test('accepted transfer warnings remain visible in the compact localized state', async ({ page }) => {
   const data = payload();
   const group = data.mirrors.mirror1.snapshot.projects.archlinux;
   group.warning = true; group.exit_code = 24;
   group.repositories[0].warning = true; group.repositories[0].exit_code = 24;
   await openFixture(page, data);
   await expect(cell(page).locator('[data-sync-state]')).toHaveText('Completed · warning');
-  await cell(page).locator('summary').click();
-  await expect(cell(page).locator('[data-group-metrics] [data-metric="state"]')).toHaveText('Completed · warning');
   await page.locator('#language-toggle').click();
   await expect(cell(page).locator('[data-sync-state]')).toHaveText('완료 · 경고');
-  await expect(cell(page).locator('summary')).toHaveAccessibleName('Arch Linux 미러 1 상세 정보');
 });
 
-test('locale switching preserves search, filter, disclosures, preview navigation and measured values', async ({ page }) => {
+test('locale switching preserves search, filter, preview navigation and measured values', async ({ page }) => {
   let previewLoads = 0;
   await page.route('https://mirror.keiminem.com/**', route => {
     previewLoads += 1;
@@ -90,39 +130,33 @@ test('locale switching preserves search, filter, disclosures, preview navigation
   await page.locator('[data-project-filter="official"]').click();
   await page.locator('#project-search').fill('artix');
   const reading = cell(page, 'artix');
-  await reading.locator('summary').click();
-  const measured = reading.locator('[data-group-metrics] [data-metric="size_measured_at"] time');
-  const originalTime = await measured.getAttribute('datetime');
-  const enText = await measured.textContent();
   for (const lang of ['ko', 'en']) {
     await page.locator('#language-toggle').click();
     await expect(page.locator('html')).toHaveAttribute('lang', lang);
     await expect(page.locator('#project-search')).toHaveValue('artix');
     await expect(page.locator('[data-project-filter="official"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('[data-project]:visible')).toHaveCount(1);
-    await expect(reading.locator('details')).toHaveAttribute('open', '');
     await expect(reading.locator('[data-disk-usage]')).toHaveText('3 GiB');
     await expect(reading).toHaveAttribute('data-freshness', 'live');
-    await expect(measured).toHaveAttribute('datetime', originalTime);
-    if (lang === 'ko') expect(await measured.textContent()).not.toBe(enText);
-    else await expect(measured).toHaveText(enText);
     await expect(reading.locator('[data-sync-state]')).toHaveText(lang === 'ko' ? '완료' : 'Completed');
-    await expect(reading.locator('summary')).toHaveAccessibleName(lang === 'ko' ? 'Artix 미러 1 상세 정보' : 'Artix Mirror 1 Details');
-    await expect(reading).toContainText(lang === 'ko' ? '최근 60초' : 'Last 60 seconds');
   }
   expect(previewLoads).toBe(1);
 });
 
 for (const language of ['en', 'ko']) {
   for (const theme of ['light', 'dark']) {
-    for (const viewport of [{ width: 320, height: 480 }, { width: 768, height: 600 }, { width: 1280, height: 800 }]) {
-      test(`inline cells and open details fit ${viewport.width}px ${language} ${theme} with usable targets`, async ({ page }) => {
+    for (const viewport of [{ width: 320, height: 480 }, { width: 375, height: 812 }, { width: 768, height: 600 }, { width: 1440, height: 900 }]) {
+      test(`compact mirror rows fit ${viewport.width}px ${language} ${theme} with usable targets`, async ({ page }) => {
         await page.setViewportSize(viewport);
         await page.addInitScript(theme => localStorage.setItem('keimirror-theme', theme), theme);
-        await openFixture(page);
+        const data = payload();
+        Object.assign(data.mirrors.mirror1.snapshot.projects.archlinux, {
+          sync_rx_bps: 123456789, sync_tx_bps: 123456789, rates_observed_at: NOW,
+          size_bytes: 12345678901234,
+        });
+        await openFixture(page, data);
         if (language === 'ko') await page.locator('#language-toggle').click();
         const reading = cell(page, 'artix');
-        await reading.locator('summary').click();
         const geometry = await page.locator('#projects').evaluate(directory => {
           const rect = node => {
             const { left, right, top, bottom, width, height } = node.getBoundingClientRect();
@@ -130,26 +164,40 @@ for (const language of ['en', 'ko']) {
           };
           const visible = node => node.getClientRects().length && getComputedStyle(node).visibility !== 'hidden';
           const controls = [...directory.querySelectorAll('a, button, input, summary')].filter(visible);
-          const children = [...directory.querySelectorAll('.mirror-cell, .telemetry-detail-body, .telemetry-metrics, .telemetry-repositories')].filter(visible);
+          const children = [...directory.querySelectorAll('.mirror-cell')].filter(visible);
           return {
             width: document.documentElement.scrollWidth,
             directoryWidth: rect(directory).width,
-            detailWidth: rect(directory.querySelector('details[open] .telemetry-detail-body')).width,
             undersized: controls.filter(node => rect(node).width < 44 || rect(node).height < 44).map(node => node.outerHTML.slice(0, 180)),
             escapes: children.filter(node => rect(node).right > rect(directory).right + 1 || rect(node).left < rect(directory).left - 1).map(node => node.className),
+            collisions: [...directory.querySelectorAll('.mirror-cell')].flatMap(cell => {
+              const rx = cell.querySelector('.telemetry-rate');
+              const tx = cell.querySelector('.telemetry-rate:last-child');
+              const range = node => { const r = document.createRange(); r.selectNodeContents(node); return r.getBoundingClientRect(); };
+              return range(rx).right > range(tx).left ? [cell.dataset.mirrorCell] : [];
+            }),
             rows: [...directory.querySelectorAll('[data-project]')].map(row => ({ cells: [...row.querySelectorAll('[data-mirror-cell]')].map(rect) })),
           };
         });
         expect(geometry.width).toBeLessThanOrEqual(viewport.width);
-        if (viewport.width === 320) expect(geometry.detailWidth).toBeGreaterThanOrEqual(geometry.directoryWidth - 1);
         expect(geometry.undersized).toEqual([]);
         expect(geometry.escapes).toEqual([]);
-        for (const { cells: [one, two] } of geometry.rows) expect(one.right <= two.left + 1 || one.bottom <= two.top + 1).toBe(true);
+        expect(geometry.collisions).toEqual([]);
+        for (const { cells: [one, two] } of geometry.rows) {
+          expect(one.height).toBeLessThanOrEqual(60);
+          expect(two.height).toBeLessThanOrEqual(60);
+          if (viewport.width <= 680) expect(one.bottom).toBeLessThanOrEqual(two.top);
+          else { expect(one.top).toBe(two.top); expect(one.right).toBeLessThanOrEqual(two.left); }
+        }
         const { default: AxeBuilder } = require('@axe-core/playwright');
         const result = await new AxeBuilder({ page }).include('#projects').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
         expect(result.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => n.target) }))).toEqual([]);
         const names = await new AxeBuilder({ page }).include('#projects').withRules(['label-content-name-mismatch']).analyze();
         expect(names.violations).toEqual([]);
+        if (process.env.COMPACT_EVIDENCE && [375, 1440].includes(viewport.width)) {
+          await page.locator('#projects').evaluate(node => node.scrollIntoView());
+          await page.screenshot({ path: `${process.env.COMPACT_EVIDENCE}/compact-${viewport.width}-${language}-${theme}.png` });
+        }
       });
     }
   }
@@ -165,15 +213,15 @@ test('without JavaScript all inline readings are honestly unknown and all browse
     await expect(page.locator('[data-project]')).toHaveCount(10);
     await expect(page.locator('[data-project] a')).toHaveCount(20);
     await expect(page.locator('[data-sync-state]')).toHaveText(Array(20).fill('Unknown'));
-    await expect(page.locator('[data-disk-usage]')).toHaveText(Array(20).fill('Unavailable'));
-    await expect(page.locator('[data-telemetry-note]')).toContainText('unavailable until a valid snapshot');
-    await cell(page, 'gentoo').locator('summary').click();
-    await expect(cell(page, 'gentoo').locator('.telemetry-scope')).toContainText('gentoo, gentoo-portage');
+    await expect(page.locator('[data-disk-usage]')).toHaveText(Array(20).fill('—'));
+    await expect(page.locator('[data-sync-rx]')).toHaveText(Array(20).fill('—'));
+    await expect(page.locator('[data-sync-tx]')).toHaveText(Array(20).fill('—'));
+    await expect(page.locator('#projects details, #projects summary, [data-repositories], [data-telemetry-note]')).toHaveCount(0);
     expect(requests.some(url => url.endsWith('/status/mirrors.json'))).toBe(false);
   } finally { await context.close(); }
 });
 
-test('disk measurement age is visible without replacing timestamps or inventing missing values', async ({ page }) => {
+test('old stored size is qualified by title without extra diagnostic text', async ({ page }) => {
   const data = payload();
   const old = data.mirrors.mirror1.snapshot.projects.archlinux;
   old.size_measured_at = NOW - 86401;
@@ -183,14 +231,12 @@ test('disk measurement age is visible without replacing timestamps or inventing 
     http_bytes_60s: null, traffic_observed_since: null });
   data.mirrors.mirror2.snapshot.projects.archlinux = { ...unknown, repositories: [{ id: 'archlinux', ...unknown }] };
   await openFixture(page, data);
-  await expect(cell(page).locator('[data-size-note]')).toContainText('older than 24 hours');
+  await expect(cell(page).locator('[data-disk-usage]')).toHaveAttribute('title', /older than 24 hours/);
   await expect(cell(page, 'archlinux', 'mirror2').locator('[data-sync-state]')).toHaveText('Unknown');
-  await expect(cell(page, 'archlinux', 'mirror2').locator('[data-disk-usage]')).toHaveText('Unavailable');
-  await cell(page).locator('summary').click();
-  await expect(cell(page).locator('[data-group-metrics] [data-metric="size_measured_at"] time')).toHaveAttribute('datetime', new Date((NOW - 86401) * 1000).toISOString());
+  await expect(cell(page, 'archlinux', 'mirror2').locator('[data-disk-usage]')).toHaveText('—');
 });
 
-test('unmeasured bytes and incomplete traffic windows cannot become apparent measured zeros', async ({ page }) => {
+test('unmeasured bytes and unobserved rates cannot become apparent measured zeros', async ({ page }) => {
   const data = payload();
   for (const mirror of Object.values(data.mirrors)) {
     const group = mirror.snapshot.projects.archlinux;
@@ -204,11 +250,8 @@ test('unmeasured bytes and incomplete traffic windows cannot become apparent mea
     }
   }
   await openFixture(page, data);
-  await expect(cell(page).locator('[data-disk-usage]')).toHaveText('Unavailable');
-  await cell(page).locator('summary').click();
-  const detail = cell(page).locator('[data-group-metrics]');
-  await expect(detail.locator('[data-metric="sync_rx_bps"]')).toHaveText('Unavailable');
-  await expect(detail.locator('[data-metric="http_bytes_60s"]')).toHaveText('Unavailable');
+  await expect(cell(page).locator('[data-disk-usage]')).toHaveText('—');
+  await expect(cell(page).locator('[data-sync-rx]')).toHaveText('—');
 });
 
 for (const [reason, change] of [
@@ -222,11 +265,7 @@ for (const [reason, change] of [
     await openFixture(page, data);
     await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
     await expect(cell(page).locator('[data-sync-state]')).toHaveText('Stale');
-    await expect(cell(page).locator('[data-freshness-note]')).toContainText('not current');
     await expect(cell(page).locator('[data-disk-usage]')).toHaveText('1 GiB');
-    await cell(page).locator('summary').click();
-    await expect(cell(page).locator('[data-group-metrics] [data-metric="state"]')).toHaveText('Last observed: Completed');
-    await expect(cell(page).locator('[data-repository="archlinux"] > p').first()).toContainText('Last observed: Completed');
   });
 }
 
@@ -240,25 +279,21 @@ test('polls every 15 seconds, retains old measurements on failure and recovers w
   });
   await page.goto('/');
   await expect(cell(page)).toHaveAttribute('data-freshness', 'live');
-  const summary = cell(page).locator('summary');
-  await summary.click();
-  const measured = await cell(page).locator('[data-group-metrics] [data-metric="size_measured_at"]').textContent();
+  const browse = cell(page).getByRole('link');
+  await browse.focus();
   expect(requests).toBe(1);
   fail = true;
   await page.clock.fastForward(15001);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
   await expect(cell(page).locator('[data-sync-state]')).toHaveText('Stale');
-  await expect(cell(page).locator('[data-freshness-note]')).toContainText('Update failed');
   await expect(cell(page).locator('[data-disk-usage]')).toHaveText('1 GiB');
-  await expect(cell(page).locator('[data-group-metrics] [data-metric="size_measured_at"]')).toHaveText(measured);
-  await expect(summary).toBeFocused();
   expect(requests).toBe(2);
+  await expect(browse).toBeFocused();
   fail = false;
   await page.clock.fastForward(15001);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'live');
   expect(requests).toBe(3);
-  await expect(summary).toBeFocused();
-  await expect(cell(page).locator('details')).toHaveAttribute('open', '');
+  await expect(browse).toBeFocused();
   // Identical old snapshots age out even if the endpoint keeps replying 200.
   await page.clock.fastForward(31000);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
@@ -326,9 +361,6 @@ for (const [states, expected, incorrect] of [
     const reading = cell(page, 'artix');
     await expect(reading).toHaveAttribute('data-freshness', 'live');
     await expect(reading).toHaveAttribute('data-sync-state', expected);
-    await reading.locator('summary').click();
-    const measured = reading.locator('[data-group-metrics] [data-metric="collected_at"] time');
-    const timestamp = await measured.getAttribute('datetime');
     project.state = incorrect;
     project.size_bytes = 0;
     data.mirrors.mirror1.snapshot.collected_at = NOW + 15;
@@ -337,8 +369,6 @@ for (const [states, expected, incorrect] of [
     await expect(reading).toHaveAttribute('data-freshness', 'stale');
     await expect(reading.locator('[data-sync-state]')).toHaveText('Stale');
     await expect(reading.locator('[data-disk-usage]')).toHaveText('3 GiB');
-    await expect(measured).toHaveAttribute('datetime', timestamp);
-    await expect(reading.locator('[data-group-metrics] [data-metric="state"]')).toHaveText(`Last observed: ${expected[0].toUpperCase()}${expected.slice(1)}`);
     await expect(cell(page, 'artix', 'mirror2')).toHaveAttribute('data-freshness', 'live');
     await expect(cell(page, 'artix', 'mirror2').locator('[data-disk-usage]')).toHaveText('4 GiB');
   });
@@ -383,7 +413,7 @@ for (const [name, corrupt] of [
     await openFixture(page, data);
     await expect(cell(page)).toHaveAttribute('data-freshness', 'offline');
     await expect(cell(page).locator('[data-sync-state]')).toHaveText('Unavailable');
-    await expect(cell(page).locator('[data-disk-usage]')).toHaveText('Unavailable');
+    await expect(cell(page).locator('[data-disk-usage]')).toHaveText('—');
     await expect(cell(page, 'archlinux', 'mirror2').locator('[data-sync-state]')).toHaveText('Completed');
     await expect(page.locator('[data-project] img')).toHaveCount(0);
     await expect(page.locator('[data-project] a')).toHaveCount(20);
@@ -401,42 +431,6 @@ test('nonfinite JSON and proxy HTML are rejected without displaying their conten
   await expect(cell(page)).toHaveAttribute('data-freshness', 'offline');
   await expect(page.locator('body')).not.toContainText('SECRET PROXY');
   expect(await page.evaluate(() => window.injected)).toBeUndefined();
-});
-
-test('details expose grouped repository scope, real measurement times and qualified traffic units', async ({ page }) => {
-  const data = payload();
-  const artix = data.mirrors.mirror1.snapshot.projects.artix;
-  Object.assign(artix, { state: 'syncing', exit_code: null, sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW - 5 });
-  Object.assign(artix.repositories[0], { state: 'syncing', exit_code: null });
-  Object.assign(artix.repositories[1], { state: 'failed', exit_code: 23 });
-  Object.assign(artix.repositories[2], { warning: true, exit_code: 24 });
-  await openFixture(page, data);
-  const reading = cell(page, 'artix');
-  const disclosure = reading.locator('summary').first();
-  await expect(disclosure).toHaveAccessibleName('Artix Mirror 1 Details');
-  await disclosure.click();
-  await expect(reading.locator('[data-disk-usage]').first()).toHaveText('3 GiB');
-  await expect(reading.locator('[data-repository]')).toHaveCount(3);
-  await expect(reading.locator('[data-repository="artix-iso"]')).toContainText('Failed');
-  await expect(reading.locator('[data-repository="artix-weekly-iso"]')).toContainText('Warning');
-  for (const [id, repositories] of Object.entries(GROUPS)) {
-    await expect(cell(page, id).locator('[data-repository]')).toHaveCount(repositories.length);
-    expect(await cell(page, id).locator('[data-repository]').evaluateAll(nodes => nodes.map(node => node.dataset.repository))).toEqual(repositories);
-  }
-  const detail = reading.locator('[data-group-metrics]');
-  await expect(detail.locator('[data-metric="size_measured_at"] time')).toHaveAttribute('datetime', new Date((NOW - 600) * 1000).toISOString());
-  await expect(detail.locator('[data-metric="last_attempt_at"] time')).toHaveAttribute('datetime', new Date((NOW - 180) * 1000).toISOString());
-  await expect(detail.locator('[data-metric="last_success_at"] time')).toHaveAttribute('datetime', new Date((NOW - 90) * 1000).toISOString());
-  await expect(detail.locator('[data-metric="sync_rx_bps"]')).toHaveText('2 KiB/s');
-  await expect(detail.locator('[data-metric="sync_tx_bps"]')).toHaveText('0 B/s');
-  await expect(detail.locator('[data-metric="http_bytes_60s"]')).toHaveText('0 B');
-  await expect(detail.locator('[data-metric="rsync_bytes_60s"]')).toHaveText('Unavailable');
-  await expect(reading).toContainText('Observed sync connections');
-  await expect(reading).toContainText('completed response bodies');
-  await expect(reading).toContainText('not instantaneous NIC throughput');
-  await expect(reading).toContainText('inter-mirror replication');
-  await expect(reading).toContainText('Shared hardlinks may be counted once per repository');
-  expect(await reading.locator('[aria-live], [role="status"]').count()).toBe(0);
 });
 
 test('same-origin snapshot enhances all original project rows with distinct inline mirror readings', async ({ page }) => {
