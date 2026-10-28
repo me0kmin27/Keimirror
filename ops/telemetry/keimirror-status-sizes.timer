@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule Keimirror sizes collection
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=1h
+AccuracySec=1s
+Unit=keimirror-status-sizes.service
+
+[Install]
+WantedBy=timers.target

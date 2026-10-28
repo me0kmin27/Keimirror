@@ -26,6 +26,24 @@ class BuildTests(unittest.TestCase):
             (root / 'assets/js/i18n.js').write_text('export const translations = {en:{title:"Updated"}};')
             self.assertNotEqual(first, build.build(root), 'Translation edits must invalidate the runtime URL too')
 
+    def test_inline_runtime_fingerprints_every_local_dependency_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for folder in ['templates', 'components', 'assets/css', 'assets/js']:
+                (root / folder).mkdir(parents=True)
+            (root / 'templates/index.html').write_text('<script src="assets/js/app.js"></script>')
+            (root / 'assets/css/styles.css').write_text('body {}')
+            (root / 'assets/js/i18n.js').write_text('export const translations = {};')
+            (root / 'assets/js/telemetry.js').write_text("import { translations } from './i18n.js';\nexport function startTelemetry() { return translations; }")
+            (root / 'assets/js/app.js').write_text("import { translations } from './i18n.js';\nimport { startTelemetry } from './telemetry.js';\nstartTelemetry();")
+            first = build.build(root)
+            runtime = build.bundle(root)
+            self.assertNotIn('import ', runtime, 'The served bundle must not fetch modules at runtime')
+            self.assertEqual(runtime.count('const translations'), 1)
+            self.assertIn('function startTelemetry', runtime)
+            (root / 'assets/js/telemetry.js').write_text("import { translations } from './i18n.js';\nexport function startTelemetry() { return translations.en; }")
+            self.assertNotEqual(first, build.build(root), 'Telemetry edits must invalidate the runtime URL')
+
 
 if __name__ == '__main__':
     unittest.main()

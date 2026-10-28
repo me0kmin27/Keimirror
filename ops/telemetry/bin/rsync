@@ -1,0 +1,17 @@
+#!/bin/bash -p
+# -p prevents BASH_ENV, imported functions and shell options from executing here.
+# Capture the kernel's original environment before either shell or Python
+# startup changes can reach the native binary. No values travel in argv, and
+# the dynamically allocated pipe cannot overwrite an inherited lock descriptor.
+mapfile -d '' -t __keimirror_environment < /proc/$$/environ
+exec {__keimirror_fd}< <(
+    if ((${#__keimirror_environment[@]})); then
+        printf '%s\0' "${__keimirror_environment[@]}"
+    fi
+)
+set -- --original-environment-fd "$__keimirror_fd" --snapshot-pid "$!" --inherited-sigign "$(
+    while read -r key value; do
+        case "$key" in SigIgn:) printf '%s' "$value"; break ;; esac
+    done < /proc/$$/status
+)" -- "$@"
+exec /usr/bin/python3 -B /opt/keimirror-telemetry/observe.py --config /etc/keimirror-telemetry/config.json --state-dir /var/lib/keimirror-telemetry --program /usr/bin/rsync "$@"

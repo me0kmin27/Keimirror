@@ -1,0 +1,170 @@
+{
+  "mirror_id": "mirror2",
+  "public_host": "mirror2.keiminem.com",
+  "projects": {
+    "archlinux": [
+      "archlinux"
+    ],
+    "gentoo": [
+      "gentoo",
+      "gentoo-portage"
+    ],
+    "kali": [
+      "kali",
+      "kali-images"
+    ],
+    "cachyos": [
+      "cachyos"
+    ],
+    "artix": [
+      "artix",
+      "artix-iso",
+      "artix-weekly-iso"
+    ],
+    "opnsense": [
+      "opnsense"
+    ],
+    "endeavouros": [
+      "endeavouros"
+    ],
+    "fyralabs": [
+      "fyralabs"
+    ],
+    "manjaro": [
+      "manjaro"
+    ],
+    "proxmox": [
+      "proxmox"
+    ]
+  },
+  "http_log": "/var/log/nginx/keimirror-telemetry.log",
+  "rsync_log": "/var/log/rsyncd/transfer.raw.log",
+  "repositories": {
+    "archlinux": {
+      "path": "/srv/data/archlinux",
+      "script": "/home/me0kmin27/script/arch-ssl.sh",
+      "user": "me0kmin27",
+      "kind": "arch",
+      "log": null,
+      "trace": null,
+      "lock": "/tmp/arch-ssl.lock"
+    },
+    "artix": {
+      "path": "/srv/data/artix",
+      "script": "/home/me0kmin27/script/artix.sh",
+      "user": "me0kmin27",
+      "kind": "generic",
+      "log": "/home/me0kmin27/script/artix.sh.log",
+      "trace": null,
+      "lock": "/tmp/artix.lock"
+    },
+    "artix-iso": {
+      "path": "/srv/data/artix-iso",
+      "script": "/home/me0kmin27/script/artix-iso.sh",
+      "user": "me0kmin27",
+      "kind": "generic",
+      "log": "/home/me0kmin27/script/artix-iso.sh.log",
+      "trace": null,
+      "lock": "/tmp/artix-iso.lock"
+    },
+    "artix-weekly-iso": {
+      "path": "/srv/data/artix-weekly-iso",
+      "script": "/home/me0kmin27/script/artix-weekly-iso.sh",
+      "user": "me0kmin27",
+      "kind": "generic",
+      "log": "/home/me0kmin27/script/artix-weekly-iso.sh.log",
+      "trace": null,
+      "lock": "/tmp/artix-weekly-iso.lock"
+    },
+    "cachyos": {
+      "path": "/srv/data/cachyos",
+      "script": "/home/me0kmin27/script/cachyos.sh",
+      "user": "me0kmin27",
+      "kind": "generic",
+      "log": "/home/me0kmin27/script/cachyos.sh.log",
+      "trace": null,
+      "lock": "/tmp/cachyos.lock"
+    },
+    "endeavouros": {
+      "path": "/srv/data/endeavouros",
+      "script": "/home/me0kmin27/script/endeavouros.sh",
+      "user": "me0kmin27",
+      "kind": "generic",
+      "log": "/home/me0kmin27/script/endeavouros.sh.log",
+      "trace": null,
+      "lock": "/tmp/endeavouros.lock"
+    },
+    "fyralabs": {
+      "path": "/srv/data/fyralabs",
+      "script": "/home/me0kmin27/script/fyralabs.sh",
+      "user": "me0kmin27",
+      "kind": "generic",
+      "log": "/home/me0kmin27/script/fyralabs.sh.log",
+      "trace": null,
+      "lock": "/tmp/fyralabs.lock"
+    },
+    "gentoo": {
+      "path": "/srv/data/gentoo",
+      "script": "/home/me0kmin27/script/gentoo.sh",
+      "user": "me0kmin27",
+      "kind": "generic",
+      "log": "/home/me0kmin27/script/gentoo.sh.log",
+      "trace": null,
+      "lock": "/tmp/gentoo.lock"
+    },
+    "gentoo-portage": {
+      "path": "/srv/data/gentoo-portage",
+      "script": "/home/me0kmin27/script/gentoo-portage.sh",
+      "user": "me0kmin27",
+      "kind": "generic",
+      "log": "/home/me0kmin27/script/gentoo-portage.sh.log",
+      "trace": null,
+      "lock": "/tmp/gentoo-portage.lock"
+    },
+    "kali": {
+      "path": "/srv/data/kali",
+      "script": "/home/archvsync/bin/ftpsync",
+      "user": "archvsync",
+      "kind": "kali",
+      "log": "/home/archvsync/log/ftpsync-kali.log",
+      "trace": "/srv/data/kali/project/trace/mirror2.keiminem.com",
+      "lock": "/srv/data/kali/Archive-Update-in-Progress-mirror2.keiminem.com"
+    },
+    "kali-images": {
+      "path": "/srv/data/kali-images",
+      "script": "/home/archvsync/bin/mirror-kali-images",
+      "user": "archvsync",
+      "kind": "kali-images",
+      "log": "/home/archvsync/log/rsync-kali-images.log",
+      "trace": null,
+      "lock": "/home/archvsync/locks/mirror-kali-images"
+    },
+    "manjaro": {
+      "path": "/srv/data/manjaro",
+      "script": "/home/me0kmin27/script/manjaro.sh",
+      "user": "me0kmin27",
+      "kind": "generic",
+      "log": "/home/me0kmin27/script/manjaro.sh.log",
+      "trace": null,
+      "lock": "/tmp/manjaro.lock"
+    },
+    "opnsense": {
+      "path": "/srv/data/opnsense",
+      "script": "/home/me0kmin27/script/opnsense.sh",
+      "user": "me0kmin27",
+      "kind": "opnsense",
+      "log": "/home/me0kmin27/log/opnsense-dist.log",
+      "trace": null,
+      "lock": "/home/me0kmin27/lock/opnsense-dist.lock"
+    },
+    "proxmox": {
+      "path": "/srv/data/proxmox",
+      "script": "/home/me0kmin27/script/proxmox.sh",
+      "user": "me0kmin27",
+      "kind": "generic",
+      "log": "/home/me0kmin27/script/proxmox.sh.log",
+      "trace": null,
+      "lock": "/tmp/proxmox.lock"
+    }
+  }
+}

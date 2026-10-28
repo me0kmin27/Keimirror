@@ -1,0 +1,31 @@
+[Unit]
+Description=Keimirror low-priority hourly repository disk usage
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/python3 -B /opt/keimirror-telemetry/sizes.py --config /etc/keimirror-telemetry/config.json --state-dir /var/lib/keimirror-telemetry --timeout 120
+TimeoutStartSec=35min
+Nice=19
+IOSchedulingClass=idle
+CPUQuota=20%
+MemoryMax=512M
+PrivateTmp=yes
+RestrictAddressFamilies=AF_UNIX
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+StateDirectory=keimirror-telemetry
+StateDirectoryMode=0755
+UMask=0022

@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule Keimirror aggregate collection
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=15s
+AccuracySec=1s
+Unit=keimirror-status-aggregate.service
+
+[Install]
+WantedBy=timers.target
