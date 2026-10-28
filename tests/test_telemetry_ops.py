@@ -70,6 +70,18 @@ class TelemetryOperationsTests(unittest.TestCase):
                 service = (base / f'keimirror-status-{name}.service').read_text()
                 self.assertIn(f'CPUQuota={quota}\n', service)
 
+    def test_one_second_services_allow_regular_ticks_without_disabling_start_limits(self):
+        import configparser
+        for name in ('collector', 'aggregate'):
+            with self.subTest(name=name):
+                unit = configparser.ConfigParser(interpolation=None)
+                unit.read(ROOT / f'ops/telemetry/keimirror-status-{name}.service')
+                # The host default (5 starts / 10 seconds) throttles healthy 1Hz jobs.
+                self.assertEqual(unit['Unit'].get('StartLimitIntervalSec', '10s'), '10s')
+                burst = unit['Unit'].getint('StartLimitBurst', fallback=5)
+                self.assertGreaterEqual(burst, 12)  # 10 periodic starts + operator headroom.
+                self.assertLessEqual(burst, 20)  # Retain a bounded runaway guard.
+
     def test_backend_and_ops_are_not_uploaded_as_public_static_files(self):
         workflow = (ROOT / '.github/workflows/deploy-on-pr-merge.yml').read_text()
         for directory in ('telemetry', 'ops'):

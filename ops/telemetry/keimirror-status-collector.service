@@ -1,4 +1,6 @@
 [Unit]
+StartLimitIntervalSec=10s
+StartLimitBurst=20
 Description=Keimirror privacy-safe project status snapshot
 After=local-fs.target
 

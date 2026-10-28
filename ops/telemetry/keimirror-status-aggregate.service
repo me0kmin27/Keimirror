@@ -1,4 +1,6 @@
 [Unit]
+StartLimitIntervalSec=10s
+StartLimitBurst=20
 Description=Keimirror same-origin public mirror snapshot aggregation
 Wants=network-online.target
 After=network-online.target
