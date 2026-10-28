@@ -68,74 +68,10 @@ function validatedTelemetry(data) {
   return { generated_at: data.generated_at, mirrors };
 }
 
-function telemetryText(tag, text, className) {
-  const node = document.createElement(tag);
-  node.textContent = text;
-  if (className) node.className = className;
-  return node;
-}
-
-function telemetryTime(value) {
-  const dictionary = translations[document.documentElement.lang] || translations.en;
-  if (value === null || value === undefined) return document.createTextNode(dictionary.telemetryUnavailable);
-  const date = new Date(value * 1000);
-  const time = telemetryText('time', new Intl.DateTimeFormat(document.documentElement.lang === 'ko' ? 'ko-KR' : 'en-US', {
-    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short',
-  }).format(date));
-  time.dateTime = date.toISOString();
-  return time;
-}
-
-function renderTelemetryMetrics(target, metric, collectedAt) {
-  const dictionary = translations[document.documentElement.lang] || translations.en;
-  const content = document.createDocumentFragment();
-  for (const field of telemetryFields) {
-    let value = field === 'collected_at' ? collectedAt : metric?.[field];
-    if (field.endsWith('_bps') && metric?.rates_observed_at == null) value = null;
-    if (field.endsWith('_bytes_60s') && (collectedAt == null || metric?.traffic_observed_since == null
-      || collectedAt - metric.traffic_observed_since < 60)) value = null;
-    const wrapper = document.createElement('div');
-    const description = document.createElement('dd');
-    description.dataset.metric = field;
-    if (field.endsWith('_at') || field === 'traffic_observed_since') {
-      description.append(telemetryTime(value));
-    } else if (field.endsWith('_bps')) {
-      description.textContent = value == null ? dictionary.telemetryUnavailable : `${telemetryBytes(value)}/s`;
-    } else if (field === 'exit_code') {
-      description.textContent = value == null ? dictionary.telemetryUnavailable : String(value);
-    } else {
-      description.textContent = telemetryBytes(value);
-    }
-    wrapper.append(telemetryText('dt', dictionary[`telemetryMetric_${field}`]), description);
-    content.append(wrapper);
-  }
-  target.replaceChildren(content);
-}
-
 function telemetryStateLabel(metric) {
   const dictionary = translations[document.documentElement.lang] || translations.en;
   return dictionary[`telemetryState_${metric?.state || 'unknown'}`]
     + (metric?.warning ? ` · ${dictionary.telemetryWarningShort}` : '');
-}
-
-function renderTelemetryRepositories(target, project, projectId, collectedAt, current) {
-  const dictionary = translations[document.documentElement.lang] || translations.en;
-  const content = document.createDocumentFragment();
-  for (const id of telemetryGroups[projectId] || []) {
-    const repository = project?.repositories?.find(repository => repository.id === id);
-    const section = document.createElement('section');
-    section.dataset.repository = id;
-    section.append(telemetryText('h4', id));
-    const state = current ? telemetryStateLabel(repository) : dictionary.telemetryLastObserved.replace('{state}', telemetryStateLabel(repository));
-    section.append(telemetryText('p', `${state} · ${dictionary.telemetryDiskUsage} ${telemetryBytes(telemetryMeasuredSize(repository))}`));
-    if (repository?.warning) section.append(telemetryText('p', dictionary.telemetryWarning, 'telemetry-warning'));
-    const metrics = document.createElement('dl');
-    metrics.className = 'telemetry-metrics';
-    renderTelemetryMetrics(metrics, repository, collectedAt);
-    section.append(metrics);
-    content.append(section);
-  }
-  target.replaceChildren(content);
 }
 
 function telemetryMeasuredSize(metric) {
@@ -150,11 +86,9 @@ function telemetryBytes(value) {
   return `${new Intl.NumberFormat(document.documentElement.lang, { maximumFractionDigits: 1 }).format(value)} ${units[unit]}`;
 }
 
-export function renderTelemetry(freshnessOnly = false) {
+export function renderTelemetry() {
   const dictionary = translations[document.documentElement.lang] || translations.en;
   const now = Date.now() / 1000;
-  const notice = document.querySelector('[data-telemetry-note]');
-  if (notice) notice.textContent = dictionary[document.hidden ? 'telemetryPausedNote' : 'telemetryUpdatingNote'];
   for (const row of document.querySelectorAll('[data-project]')) {
     for (const cell of row.querySelectorAll('[data-mirror-cell]')) {
       const mirror = telemetryData?.mirrors[cell.dataset.mirrorCell];
@@ -165,35 +99,22 @@ export function renderTelemetry(freshnessOnly = false) {
         : !snapshot ? 'offline'
         : telemetryFetchState === 'failure' || !mirror.available
           || !telemetryRecent(snapshot.collected_at, now) || !telemetryRecent(telemetryData.generated_at, now) ? 'stale' : 'live';
-      const changed = freshness !== cell.dataset.freshness;
       cell.dataset.freshness = freshness;
       cell.dataset.syncState = freshness === 'live' ? project.state : 'unknown';
       cell.querySelector('[data-sync-state]').textContent = freshness === 'live'
         ? telemetryStateLabel(project) : dictionary[`telemetryFreshness_${freshness}`];
-      const age = snapshot?.collected_at == null ? null : Math.floor(now - snapshot.collected_at);
-      const sampleAge = cell.querySelector('[data-sample-age]');
-      sampleAge.hidden = age === null;
-      sampleAge.textContent = age === null ? dictionary.telemetryNoSample
-        : age < 0 ? dictionary.telemetryFuture : dictionary.telemetryAge.replace('{age}', new Intl.NumberFormat(document.documentElement.lang).format(age));
-      const note = cell.querySelector('[data-freshness-note]');
-      note.textContent = freshness === 'live' ? '' : dictionary[freshness === 'paused' ? 'telemetryPausedNote'
-        : freshness === 'loading' ? 'telemetryLoadingNote' : freshness === 'offline' ? 'telemetryNoSnapshot'
-          : telemetryFetchState === 'failure' || !mirror.available ? 'telemetryUpdateFailed' : 'telemetryNotCurrent'];
-      note.hidden = freshness === 'live';
-      const sizeNote = cell.querySelector('[data-size-note]');
-      sizeNote.textContent = dictionary.telemetrySizeOld;
-      sizeNote.hidden = project?.size_measured_at == null || now - project.size_measured_at <= 86400;
-      if (freshnessOnly && !changed) continue;
-      cell.querySelector('[data-disk-usage]').textContent = telemetryBytes(telemetryMeasuredSize(project));
-      const metrics = cell.querySelector('[data-group-metrics]');
-      renderTelemetryMetrics(metrics, project, snapshot?.collected_at);
-      const stateMetric = document.createElement('div');
-      const stateValue = telemetryText('dd', freshness === 'live' ? telemetryStateLabel(project)
-        : dictionary.telemetryLastObserved.replace('{state}', telemetryStateLabel(project)));
-      stateValue.dataset.metric = 'state';
-      stateMetric.append(telemetryText('dt', dictionary.telemetryMetric_state), stateValue);
-      metrics.prepend(stateMetric);
-      renderTelemetryRepositories(cell.querySelector('[data-repositories]'), project, row.dataset.project, snapshot?.collected_at, freshness === 'live');
+      const size = cell.querySelector('[data-disk-usage]');
+      size.textContent = telemetryBytes(telemetryMeasuredSize(project));
+      size.title = dictionary.telemetryStoredSize
+        + (project?.size_measured_at != null && now - project.size_measured_at > 86400 ? ` · ${dictionary.telemetrySizeOld}` : '')
+        + (project && freshness !== 'live' ? ` · ${dictionary.telemetryFreshness_stale}` : '');
+      for (const direction of ['rx', 'tx']) {
+        const rate = cell.querySelector(`[data-sync-${direction}]`);
+        const value = freshness === 'live' && telemetryRecent(project?.rates_observed_at, now)
+          ? project[`sync_${direction}_bps`] : null;
+        rate.textContent = value == null ? dictionary.telemetryUnavailable : `${telemetryBytes(value)}/s`;
+        rate.title = `${direction.toUpperCase()}: ${dictionary.telemetryObservedTraffic}`;
+      }
     }
   }
 }
@@ -214,7 +135,7 @@ async function fetchTelemetry() {
   telemetryRequest = controller;
   const timeout = setTimeout(() => controller.abort(), 8000);
   if (telemetryFetchState === 'idle') telemetryFetchState = 'loading';
-  renderTelemetry(true);
+  renderTelemetry();
   try {
     const response = await fetch('/status/mirrors.json', {
       cache: 'no-store', credentials: 'same-origin', mode: 'same-origin', redirect: 'error', signal: controller.signal,
@@ -251,12 +172,12 @@ function telemetryVisibility() {
     telemetryRequest?.abort();
     telemetryRequest = null;
     telemetryNeedsFresh = true;
-    renderTelemetry(true);
+    renderTelemetry();
     return;
   }
   fetchTelemetry();
   telemetryPoll = setInterval(fetchTelemetry, 15000);
-  telemetryAgeTimer = setInterval(() => renderTelemetry(true), 1000);
+  telemetryAgeTimer = setInterval(() => renderTelemetry(), 1000);
 }
 
 export function startTelemetry() {

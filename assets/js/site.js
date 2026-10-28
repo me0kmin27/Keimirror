@@ -5,39 +5,11 @@ export const translations = {
     telemetryFreshness_offline: "Unavailable",
     telemetryFreshness_stale: "Stale",
     telemetryFreshness_paused: "Paused",
-    telemetryLastObserved: "Last observed: {state}",
-    telemetryMetric_state: "Synchronization",
-    telemetryNoSnapshot: "No valid snapshot.",
-    telemetryNotCurrent: "Retained data; not current.",
-    telemetryUpdateFailed: "Update failed. Retained data; not current.",
-    telemetryPausedNote: "Updates paused while this page is hidden.",
-    telemetryLoadingNote: "Waiting for a fresh snapshot.",
-    telemetryUpdatingNote: "Updates every 15 seconds while this page is visible.",
-    telemetryAge: "Sample: {age}s ago",
-    telemetryFuture: "Sample clock is ahead",
-    telemetryNoSample: "Sample time unavailable",
     telemetrySizeOld: 'Disk measurement is older than 24 hours.',
-    telemetryDetails: "Details",
-    telemetryScope: "Repository scope",
-    telemetryDiskScope: "Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.",
-    telemetrySyncScope: "Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.",
-    telemetryTrafficScope: "Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.",
-    telemetryWarning: "Warning: last outcome includes an accepted transfer warning.",
-    telemetryMetric_collected_at: "Snapshot collected",
-    telemetryMetric_size_measured_at: "Disk measured",
-    telemetryMetric_last_attempt_at: "Latest attempt",
-    telemetryMetric_last_finished_at: "Latest finish",
-    telemetryMetric_last_success_at: "Last verified success",
-    telemetryMetric_sync_rx_bps: "Observed sync receive",
-    telemetryMetric_sync_tx_bps: "Observed sync send",
-    telemetryMetric_rates_observed_at: "Sync sampled",
-    telemetryMetric_http_bytes_60s: "HTTP delivered · last 60s",
-    telemetryMetric_rsync_bytes_60s: "rsync served · last 60s",
-    telemetryMetric_traffic_observed_since: "Traffic observed since",
-    telemetryMetric_exit_code: "Last exit code",
     telemetryWarningShort: 'warning',
     telemetryState_unknown: 'Unknown', telemetryState_syncing: 'Syncing', telemetryState_completed: 'Completed', telemetryState_failed: 'Failed',
-    telemetryDiskUsage: 'Disk usage', telemetryUnavailable: 'Unavailable',
+    telemetryStoredSize: 'Total project stored data', telemetryUnavailable: '—',
+    telemetryObservedTraffic: 'observed sync traffic, not server NIC or completed HTTP delivery',
     themeAuto: 'Auto', themeLight: 'Light', themeDark: 'Dark', themeControl: 'Change theme, current theme: {theme}', languageControl: 'Switch to Korean (한국어)',
     skipLink: 'Skip to content', heroLocation: 'Gumi, South Korea', exploreProjects: 'Explore projects',
     previewMirror: 'Preview directory', mirrorPreviewHint: 'Browse project files below, or preview a mirror’s root directory.',
@@ -89,39 +61,11 @@ export const translations = {
     telemetryFreshness_offline: "확인 불가",
     telemetryFreshness_stale: "오래된 정보",
     telemetryFreshness_paused: "일시 중지",
-    telemetryLastObserved: "마지막 관측: {state}",
-    telemetryMetric_state: "동기화 상태",
-    telemetryNoSnapshot: "유효한 수집 정보 없음.",
-    telemetryNotCurrent: "보관된 정보이며 현재 상태가 아닙니다.",
-    telemetryUpdateFailed: "갱신 실패. 보관된 정보이며 현재 상태가 아닙니다.",
-    telemetryPausedNote: "페이지가 숨겨져 자동 갱신을 일시 중지했습니다.",
-    telemetryLoadingNote: "새 수집 정보를 기다리는 중입니다.",
-    telemetryUpdatingNote: "페이지가 보이는 동안 15초마다 갱신합니다.",
-    telemetryAge: "수집: {age}초 전",
-    telemetryFuture: "수집 시계가 현재보다 앞서 있습니다",
-    telemetryNoSample: "수집 시각 확인 불가",
     telemetrySizeOld: '디스크 측정 후 24시간이 지났습니다.',
-    telemetryDetails: "상세 정보",
-    telemetryScope: "저장소 범위",
-    telemetryDiskScope: "이 저장소들의 할당된 디스크 사용량 합계입니다. 공유 하드링크는 저장소마다 중복 합산될 수 있습니다.",
-    telemetrySyncScope: "관측된 동기화 연결: 상위 저장소 TCP 페이로드의 표본만 측정하며, 관측 범위가 없으면 확인 불가로 표시합니다.",
-    telemetryTrafficScope: "최근 60초: HTTP 완료 응답 본문과 rsync 완료 파일 기록의 바이트 수입니다. 미러 간 복제를 포함하며 순간 NIC 처리량이 아닙니다.",
-    telemetryWarning: "경고: 마지막 결과에 허용된 전송 경고가 있습니다.",
-    telemetryMetric_collected_at: "상태 수집 시각",
-    telemetryMetric_size_measured_at: "디스크 측정 시각",
-    telemetryMetric_last_attempt_at: "최근 시도",
-    telemetryMetric_last_finished_at: "최근 종료",
-    telemetryMetric_last_success_at: "마지막 검증된 성공",
-    telemetryMetric_sync_rx_bps: "관측 동기화 수신",
-    telemetryMetric_sync_tx_bps: "관측 동기화 송신",
-    telemetryMetric_rates_observed_at: "동기화 표본 시각",
-    telemetryMetric_http_bytes_60s: "HTTP 전송 · 최근 60초",
-    telemetryMetric_rsync_bytes_60s: "rsync 제공 · 최근 60초",
-    telemetryMetric_traffic_observed_since: "트래픽 관측 시작",
-    telemetryMetric_exit_code: "마지막 종료 코드",
     telemetryWarningShort: '경고',
     telemetryState_unknown: '알 수 없음', telemetryState_syncing: '동기화 중', telemetryState_completed: '완료', telemetryState_failed: '실패',
-    telemetryDiskUsage: '디스크 사용량', telemetryUnavailable: '확인 불가',
+    telemetryStoredSize: '프로젝트 전체 저장 데이터', telemetryUnavailable: '—',
+    telemetryObservedTraffic: '관측 동기화 트래픽 (서버 NIC 전체·HTTP 완료 전송 아님)',
     themeAuto: '자동', themeLight: '밝게', themeDark: '어둡게', themeControl: '테마 변경, 현재 테마: {theme}', languageControl: '영어로 전환 (English)',
     skipLink: '본문으로 바로가기', heroLocation: '대한민국 구미', exploreProjects: '프로젝트 둘러보기',
     previewMirror: '디렉터리 미리보기', mirrorPreviewHint: '아래에서 프로젝트 파일을 찾거나 미러의 최상위 디렉터리를 미리 보세요.',
@@ -240,74 +184,10 @@ function validatedTelemetry(data) {
   return { generated_at: data.generated_at, mirrors };
 }
 
-function telemetryText(tag, text, className) {
-  const node = document.createElement(tag);
-  node.textContent = text;
-  if (className) node.className = className;
-  return node;
-}
-
-function telemetryTime(value) {
-  const dictionary = translations[document.documentElement.lang] || translations.en;
-  if (value === null || value === undefined) return document.createTextNode(dictionary.telemetryUnavailable);
-  const date = new Date(value * 1000);
-  const time = telemetryText('time', new Intl.DateTimeFormat(document.documentElement.lang === 'ko' ? 'ko-KR' : 'en-US', {
-    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short',
-  }).format(date));
-  time.dateTime = date.toISOString();
-  return time;
-}
-
-function renderTelemetryMetrics(target, metric, collectedAt) {
-  const dictionary = translations[document.documentElement.lang] || translations.en;
-  const content = document.createDocumentFragment();
-  for (const field of telemetryFields) {
-    let value = field === 'collected_at' ? collectedAt : metric?.[field];
-    if (field.endsWith('_bps') && metric?.rates_observed_at == null) value = null;
-    if (field.endsWith('_bytes_60s') && (collectedAt == null || metric?.traffic_observed_since == null
-      || collectedAt - metric.traffic_observed_since < 60)) value = null;
-    const wrapper = document.createElement('div');
-    const description = document.createElement('dd');
-    description.dataset.metric = field;
-    if (field.endsWith('_at') || field === 'traffic_observed_since') {
-      description.append(telemetryTime(value));
-    } else if (field.endsWith('_bps')) {
-      description.textContent = value == null ? dictionary.telemetryUnavailable : `${telemetryBytes(value)}/s`;
-    } else if (field === 'exit_code') {
-      description.textContent = value == null ? dictionary.telemetryUnavailable : String(value);
-    } else {
-      description.textContent = telemetryBytes(value);
-    }
-    wrapper.append(telemetryText('dt', dictionary[`telemetryMetric_${field}`]), description);
-    content.append(wrapper);
-  }
-  target.replaceChildren(content);
-}
-
 function telemetryStateLabel(metric) {
   const dictionary = translations[document.documentElement.lang] || translations.en;
   return dictionary[`telemetryState_${metric?.state || 'unknown'}`]
     + (metric?.warning ? ` · ${dictionary.telemetryWarningShort}` : '');
-}
-
-function renderTelemetryRepositories(target, project, projectId, collectedAt, current) {
-  const dictionary = translations[document.documentElement.lang] || translations.en;
-  const content = document.createDocumentFragment();
-  for (const id of telemetryGroups[projectId] || []) {
-    const repository = project?.repositories?.find(repository => repository.id === id);
-    const section = document.createElement('section');
-    section.dataset.repository = id;
-    section.append(telemetryText('h4', id));
-    const state = current ? telemetryStateLabel(repository) : dictionary.telemetryLastObserved.replace('{state}', telemetryStateLabel(repository));
-    section.append(telemetryText('p', `${state} · ${dictionary.telemetryDiskUsage} ${telemetryBytes(telemetryMeasuredSize(repository))}`));
-    if (repository?.warning) section.append(telemetryText('p', dictionary.telemetryWarning, 'telemetry-warning'));
-    const metrics = document.createElement('dl');
-    metrics.className = 'telemetry-metrics';
-    renderTelemetryMetrics(metrics, repository, collectedAt);
-    section.append(metrics);
-    content.append(section);
-  }
-  target.replaceChildren(content);
 }
 
 function telemetryMeasuredSize(metric) {
@@ -322,11 +202,9 @@ function telemetryBytes(value) {
   return `${new Intl.NumberFormat(document.documentElement.lang, { maximumFractionDigits: 1 }).format(value)} ${units[unit]}`;
 }
 
-export function renderTelemetry(freshnessOnly = false) {
+export function renderTelemetry() {
   const dictionary = translations[document.documentElement.lang] || translations.en;
   const now = Date.now() / 1000;
-  const notice = document.querySelector('[data-telemetry-note]');
-  if (notice) notice.textContent = dictionary[document.hidden ? 'telemetryPausedNote' : 'telemetryUpdatingNote'];
   for (const row of document.querySelectorAll('[data-project]')) {
     for (const cell of row.querySelectorAll('[data-mirror-cell]')) {
       const mirror = telemetryData?.mirrors[cell.dataset.mirrorCell];
@@ -337,35 +215,22 @@ export function renderTelemetry(freshnessOnly = false) {
         : !snapshot ? 'offline'
         : telemetryFetchState === 'failure' || !mirror.available
           || !telemetryRecent(snapshot.collected_at, now) || !telemetryRecent(telemetryData.generated_at, now) ? 'stale' : 'live';
-      const changed = freshness !== cell.dataset.freshness;
       cell.dataset.freshness = freshness;
       cell.dataset.syncState = freshness === 'live' ? project.state : 'unknown';
       cell.querySelector('[data-sync-state]').textContent = freshness === 'live'
         ? telemetryStateLabel(project) : dictionary[`telemetryFreshness_${freshness}`];
-      const age = snapshot?.collected_at == null ? null : Math.floor(now - snapshot.collected_at);
-      const sampleAge = cell.querySelector('[data-sample-age]');
-      sampleAge.hidden = age === null;
-      sampleAge.textContent = age === null ? dictionary.telemetryNoSample
-        : age < 0 ? dictionary.telemetryFuture : dictionary.telemetryAge.replace('{age}', new Intl.NumberFormat(document.documentElement.lang).format(age));
-      const note = cell.querySelector('[data-freshness-note]');
-      note.textContent = freshness === 'live' ? '' : dictionary[freshness === 'paused' ? 'telemetryPausedNote'
-        : freshness === 'loading' ? 'telemetryLoadingNote' : freshness === 'offline' ? 'telemetryNoSnapshot'
-          : telemetryFetchState === 'failure' || !mirror.available ? 'telemetryUpdateFailed' : 'telemetryNotCurrent'];
-      note.hidden = freshness === 'live';
-      const sizeNote = cell.querySelector('[data-size-note]');
-      sizeNote.textContent = dictionary.telemetrySizeOld;
-      sizeNote.hidden = project?.size_measured_at == null || now - project.size_measured_at <= 86400;
-      if (freshnessOnly && !changed) continue;
-      cell.querySelector('[data-disk-usage]').textContent = telemetryBytes(telemetryMeasuredSize(project));
-      const metrics = cell.querySelector('[data-group-metrics]');
-      renderTelemetryMetrics(metrics, project, snapshot?.collected_at);
-      const stateMetric = document.createElement('div');
-      const stateValue = telemetryText('dd', freshness === 'live' ? telemetryStateLabel(project)
-        : dictionary.telemetryLastObserved.replace('{state}', telemetryStateLabel(project)));
-      stateValue.dataset.metric = 'state';
-      stateMetric.append(telemetryText('dt', dictionary.telemetryMetric_state), stateValue);
-      metrics.prepend(stateMetric);
-      renderTelemetryRepositories(cell.querySelector('[data-repositories]'), project, row.dataset.project, snapshot?.collected_at, freshness === 'live');
+      const size = cell.querySelector('[data-disk-usage]');
+      size.textContent = telemetryBytes(telemetryMeasuredSize(project));
+      size.title = dictionary.telemetryStoredSize
+        + (project?.size_measured_at != null && now - project.size_measured_at > 86400 ? ` · ${dictionary.telemetrySizeOld}` : '')
+        + (project && freshness !== 'live' ? ` · ${dictionary.telemetryFreshness_stale}` : '');
+      for (const direction of ['rx', 'tx']) {
+        const rate = cell.querySelector(`[data-sync-${direction}]`);
+        const value = freshness === 'live' && telemetryRecent(project?.rates_observed_at, now)
+          ? project[`sync_${direction}_bps`] : null;
+        rate.textContent = value == null ? dictionary.telemetryUnavailable : `${telemetryBytes(value)}/s`;
+        rate.title = `${direction.toUpperCase()}: ${dictionary.telemetryObservedTraffic}`;
+      }
     }
   }
 }
@@ -386,7 +251,7 @@ async function fetchTelemetry() {
   telemetryRequest = controller;
   const timeout = setTimeout(() => controller.abort(), 8000);
   if (telemetryFetchState === 'idle') telemetryFetchState = 'loading';
-  renderTelemetry(true);
+  renderTelemetry();
   try {
     const response = await fetch('/status/mirrors.json', {
       cache: 'no-store', credentials: 'same-origin', mode: 'same-origin', redirect: 'error', signal: controller.signal,
@@ -423,12 +288,12 @@ function telemetryVisibility() {
     telemetryRequest?.abort();
     telemetryRequest = null;
     telemetryNeedsFresh = true;
-    renderTelemetry(true);
+    renderTelemetry();
     return;
   }
   fetchTelemetry();
   telemetryPoll = setInterval(fetchTelemetry, 15000);
-  telemetryAgeTimer = setInterval(() => renderTelemetry(true), 1000);
+  telemetryAgeTimer = setInterval(() => renderTelemetry(), 1000);
 }
 
 export function startTelemetry() {
