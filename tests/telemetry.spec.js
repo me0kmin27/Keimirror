@@ -135,7 +135,7 @@ test('compact contract contains only browse, status, total stored size and obser
   await expect(reading.locator('[data-disk-usage]')).toHaveAttribute('title', 'Total project stored data');
   await expect(reading.locator('[data-sync-rx]')).toHaveText('2 KiB/s');
   await expect(reading.locator('[data-sync-tx]')).toHaveText('0 B/s');
-  await expect(reading.locator('[data-sync-rx]')).toHaveAttribute('title', 'RX: observed sync traffic, not server NIC or completed HTTP delivery');
+  await expect(reading.locator('[data-sync-rx]')).toHaveAttribute('title', 'RX: observed project transfers (HTTP and rsync), not server NIC totals', { timeout: 500 });
   await expect(cell(page).locator('[data-sync-rx]')).toHaveText('—');
   await expect(reading).not.toContainText(/60 seconds|Repository scope|Collected|Details/);
 });
