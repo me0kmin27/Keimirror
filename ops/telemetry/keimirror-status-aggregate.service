@@ -1,0 +1,30 @@
+[Unit]
+Description=Keimirror same-origin public mirror snapshot aggregation
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=keimirror-status
+Group=keimirror-status
+ExecStart=/usr/bin/python3 -B /opt/keimirror-telemetry/aggregate.py --output /var/lib/keimirror-telemetry/public/mirrors.json
+TimeoutStartSec=12s
+CPUQuota=10%
+MemoryMax=128M
+PrivateTmp=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+StateDirectory=keimirror-telemetry
+StateDirectoryMode=0755
+UMask=0022

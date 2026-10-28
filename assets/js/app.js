@@ -1,4 +1,5 @@
 import { translations } from './i18n.js';
+import { startTelemetry, renderTelemetry } from './telemetry.js';
 
 const root = document.documentElement;
 const themes = ['auto', 'light', 'dark'];
@@ -58,6 +59,7 @@ function componentError(host) {
     bindControls();
     applyTheme(root.dataset.theme || 'auto');
     applyLanguage(root.lang);
+    startTelemetry();
   });
   fallback.append(message, retry);
   host.replaceChildren(fallback);
@@ -131,6 +133,7 @@ function applyLanguage(language) {
   renderCopyStatus();
   renderMirrorLabels();
   renderVisitorIp();
+  renderTelemetry();
   renderThemeControl();
   if (languageToggle) {
     languageToggle.textContent = language === 'en' ? '한국어' : 'English';
@@ -481,6 +484,7 @@ async function initialize() {
     bindControls();
     applyTheme(readPreference('keimirror-theme', 'auto'));
     applyLanguage(detectInitialLanguage());
+    startTelemetry();
   } finally {
     markAppReady();
   }

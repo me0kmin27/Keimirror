@@ -83,6 +83,8 @@ jobs:
             --exclude "__pycache__" \
             --exclude "*.pyc" \
             --exclude "docs" \
+            --exclude "telemetry" \
+            --exclude "ops" \
             -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.DEPLOY_PORT }}" \
             ./ \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"

@@ -29,8 +29,8 @@
   <script type="application/ld+json">
     {"@context":"https://schema.org","@type":"WebSite","name":"Keimirror Public Mirror","url":"https://keiminem.com/","description":"Keiverse public mirror service in South Korea for open-source software repositories.","sameAs":["https://mirror.keiminem.com/","https://mirror2.keiminem.com/"],"inLanguage":["en","ko"],"publisher":{"@type":"Organization","name":"Keiverse","url":"https://keiminem.com/"}}
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=aec293686ffd8c2a">
-  <script type="module" src="assets/js/site.js?v=eedac1f154ad0b82"></script>
+  <link rel="stylesheet" href="assets/css/styles.css?v=9ccac0dfc29f5071">
+  <script type="module" src="assets/js/site.js?v=b4c087a43991fa13"></script>
 </head>
 <body class="app-ready" data-rendered="true">
   <a class="skip-link" href="#main-content" data-i18n="skipLink">Skip to content</a>
@@ -135,90 +135,451 @@
       <button class="button filter-button" type="button" data-project-filter="community" aria-pressed="false" data-i18n="filterCommunity">Community</button>
     </div>
   </div>
+  <p class="telemetry-update-note" data-telemetry-note>Telemetry is unavailable until a valid snapshot is received. Browse links remain available.</p>
   <div class="directory-list-heading" aria-hidden="true">
     <span data-i18n="projectColumn">Project / distribution</span>
-    <span data-i18n="coverageColumn">Mirror participation</span>
-    <span data-i18n="browseColumn">Browse files</span>
+    <span data-i18n="mirrorOneTitle">Mirror 1</span>
+    <span data-i18n="mirrorTwoTitle">Mirror 2</span>
   </div>
   <ol class="project-list" id="project-list">
-    <li class="project-row" data-project data-category="official" data-search="arch linux archlinux 아치 리눅스">
+    <li class="project-row" data-project="archlinux" data-category="official" data-search="arch linux archlinux 아치 리눅스">
+      <div class="project-info">
       <div class="project-identity"><span class="project-index" aria-hidden="true">01</span><h3 id="project-archlinux">Arch Linux</h3><span class="badge tier" data-i18n="tierOneBadge">Tier 1</span></div>
       <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      </div>
       <div class="project-links">
+        <div class="mirror-cell" data-mirror-cell="mirror1">
         <a href="https://mirror.keiminem.com/archlinux/" aria-labelledby="project-archlinux project-archlinux-mirror1"><span id="project-archlinux-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-archlinux project-archlinux-mirror1 details-archlinux-mirror1"><span id="details-archlinux-mirror1" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>archlinux</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
+        <div class="mirror-cell" data-mirror-cell="mirror2">
         <a href="https://mirror2.keiminem.com/archlinux/" aria-labelledby="project-archlinux project-archlinux-mirror2"><span id="project-archlinux-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-archlinux project-archlinux-mirror2 details-archlinux-mirror2"><span id="details-archlinux-mirror2" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>archlinux</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
-    <li class="project-row" data-project data-category="official" data-search="gentoo 젠투">
+    <li class="project-row" data-project="gentoo" data-category="official" data-search="gentoo 젠투">
+      <div class="project-info">
       <div class="project-identity"><span class="project-index" aria-hidden="true">02</span><h3 id="project-gentoo">Gentoo</h3></div>
       <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      </div>
       <div class="project-links">
+        <div class="mirror-cell" data-mirror-cell="mirror1">
         <a href="https://mirror.keiminem.com/gentoo/" aria-labelledby="project-gentoo project-gentoo-mirror1"><span id="project-gentoo-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-gentoo project-gentoo-mirror1 details-gentoo-mirror1"><span id="details-gentoo-mirror1" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>gentoo, gentoo-portage</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
+        <div class="mirror-cell" data-mirror-cell="mirror2">
         <a href="https://mirror2.keiminem.com/gentoo/" aria-labelledby="project-gentoo project-gentoo-mirror2"><span id="project-gentoo-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-gentoo project-gentoo-mirror2 details-gentoo-mirror2"><span id="details-gentoo-mirror2" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>gentoo, gentoo-portage</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
-    <li class="project-row" data-project data-category="official" data-search="kali linux 칼리 리눅스">
+    <li class="project-row" data-project="kali" data-category="official" data-search="kali linux 칼리 리눅스">
+      <div class="project-info">
       <div class="project-identity"><span class="project-index" aria-hidden="true">03</span><h3 id="project-kali">Kali Linux</h3></div>
       <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      </div>
       <div class="project-links">
+        <div class="mirror-cell" data-mirror-cell="mirror1">
         <a href="https://mirror.keiminem.com/kali/" aria-labelledby="project-kali project-kali-mirror1"><span id="project-kali-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-kali project-kali-mirror1 details-kali-mirror1"><span id="details-kali-mirror1" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>kali, kali-images</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
+        <div class="mirror-cell" data-mirror-cell="mirror2">
         <a href="https://mirror2.keiminem.com/kali/" aria-labelledby="project-kali project-kali-mirror2"><span id="project-kali-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-kali project-kali-mirror2 details-kali-mirror2"><span id="details-kali-mirror2" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>kali, kali-images</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
-    <li class="project-row" data-project data-category="official" data-search="cachyos 캐시 캐시OS 카치">
+    <li class="project-row" data-project="cachyos" data-category="official" data-search="cachyos 캐시 캐시OS 카치">
+      <div class="project-info">
       <div class="project-identity"><span class="project-index" aria-hidden="true">04</span><h3 id="project-cachyos">CachyOS</h3></div>
       <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      </div>
       <div class="project-links">
+        <div class="mirror-cell" data-mirror-cell="mirror1">
         <a href="https://mirror.keiminem.com/cachyos/" aria-labelledby="project-cachyos project-cachyos-mirror1"><span id="project-cachyos-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-cachyos project-cachyos-mirror1 details-cachyos-mirror1"><span id="details-cachyos-mirror1" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>cachyos</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
+        <div class="mirror-cell" data-mirror-cell="mirror2">
         <a href="https://mirror2.keiminem.com/cachyos/" aria-labelledby="project-cachyos project-cachyos-mirror2"><span id="project-cachyos-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-cachyos project-cachyos-mirror2 details-cachyos-mirror2"><span id="details-cachyos-mirror2" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>cachyos</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
-    <li class="project-row" data-project data-category="official" data-search="artix 아틱스 아르틱스">
+    <li class="project-row" data-project="artix" data-category="official" data-search="artix 아틱스 아르틱스">
+      <div class="project-info">
       <div class="project-identity"><span class="project-index" aria-hidden="true">05</span><h3 id="project-artix">Artix</h3></div>
       <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      </div>
       <div class="project-links">
+        <div class="mirror-cell" data-mirror-cell="mirror1">
         <a href="https://mirror.keiminem.com/artix/" aria-labelledby="project-artix project-artix-mirror1"><span id="project-artix-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-artix project-artix-mirror1 details-artix-mirror1"><span id="details-artix-mirror1" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>artix, artix-iso, artix-weekly-iso</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
+        <div class="mirror-cell" data-mirror-cell="mirror2">
         <a href="https://mirror2.keiminem.com/artix/" aria-labelledby="project-artix project-artix-mirror2"><span id="project-artix-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-artix project-artix-mirror2 details-artix-mirror2"><span id="details-artix-mirror2" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>artix, artix-iso, artix-weekly-iso</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
-    <li class="project-row" data-project data-category="official" data-search="opnsense 오픈센스">
+    <li class="project-row" data-project="opnsense" data-category="official" data-search="opnsense 오픈센스">
+      <div class="project-info">
       <div class="project-identity"><span class="project-index" aria-hidden="true">06</span><h3 id="project-opnsense">OPNsense</h3></div>
       <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      </div>
       <div class="project-links">
+        <div class="mirror-cell" data-mirror-cell="mirror1">
         <a href="https://mirror.keiminem.com/opnsense/" aria-labelledby="project-opnsense project-opnsense-mirror1"><span id="project-opnsense-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-opnsense project-opnsense-mirror1 details-opnsense-mirror1"><span id="details-opnsense-mirror1" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>opnsense</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
+        <div class="mirror-cell" data-mirror-cell="mirror2">
         <a href="https://mirror2.keiminem.com/opnsense/" aria-labelledby="project-opnsense project-opnsense-mirror2"><span id="project-opnsense-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-opnsense project-opnsense-mirror2 details-opnsense-mirror2"><span id="details-opnsense-mirror2" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>opnsense</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
-    <li class="project-row" data-project data-category="community" data-search="endeavouros 엔데버 엔데버OS">
+    <li class="project-row" data-project="endeavouros" data-category="community" data-search="endeavouros 엔데버 엔데버OS">
+      <div class="project-info">
       <div class="project-identity"><span class="project-index" aria-hidden="true">07</span><h3 id="project-endeavouros">EndeavourOS</h3></div>
       <span class="project-category" data-i18n="communityMirrorsTitle">Community mirror</span>
+      </div>
       <div class="project-links">
+        <div class="mirror-cell" data-mirror-cell="mirror1">
         <a href="https://mirror.keiminem.com/endeavouros/" aria-labelledby="project-endeavouros project-endeavouros-mirror1"><span id="project-endeavouros-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-endeavouros project-endeavouros-mirror1 details-endeavouros-mirror1"><span id="details-endeavouros-mirror1" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>endeavouros</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
+        <div class="mirror-cell" data-mirror-cell="mirror2">
         <a href="https://mirror2.keiminem.com/endeavouros/" aria-labelledby="project-endeavouros project-endeavouros-mirror2"><span id="project-endeavouros-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-endeavouros project-endeavouros-mirror2 details-endeavouros-mirror2"><span id="details-endeavouros-mirror2" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>endeavouros</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
-    <li class="project-row" data-project data-category="community" data-search="fyra labs 파이라 피라">
+    <li class="project-row" data-project="fyralabs" data-category="community" data-search="fyra labs 파이라 피라">
+      <div class="project-info">
       <div class="project-identity"><span class="project-index" aria-hidden="true">08</span><h3 id="project-fyralabs">Fyra Labs</h3></div>
       <span class="project-category" data-i18n="communityMirrorsTitle">Community mirror</span>
+      </div>
       <div class="project-links">
+        <div class="mirror-cell" data-mirror-cell="mirror1">
         <a href="https://mirror.keiminem.com/fyralabs/" aria-labelledby="project-fyralabs project-fyralabs-mirror1"><span id="project-fyralabs-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-fyralabs project-fyralabs-mirror1 details-fyralabs-mirror1"><span id="details-fyralabs-mirror1" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>fyralabs</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
+        <div class="mirror-cell" data-mirror-cell="mirror2">
         <a href="https://mirror2.keiminem.com/fyralabs/" aria-labelledby="project-fyralabs project-fyralabs-mirror2"><span id="project-fyralabs-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-fyralabs project-fyralabs-mirror2 details-fyralabs-mirror2"><span id="details-fyralabs-mirror2" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>fyralabs</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
-    <li class="project-row" data-project data-category="community" data-search="manjaro 만자로">
+    <li class="project-row" data-project="manjaro" data-category="community" data-search="manjaro 만자로">
+      <div class="project-info">
       <div class="project-identity"><span class="project-index" aria-hidden="true">09</span><h3 id="project-manjaro">Manjaro</h3></div>
       <span class="project-category" data-i18n="communityMirrorsTitle">Community mirror</span>
+      </div>
       <div class="project-links">
+        <div class="mirror-cell" data-mirror-cell="mirror1">
         <a href="https://mirror.keiminem.com/manjaro/" aria-labelledby="project-manjaro project-manjaro-mirror1"><span id="project-manjaro-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-manjaro project-manjaro-mirror1 details-manjaro-mirror1"><span id="details-manjaro-mirror1" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>manjaro</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
+        <div class="mirror-cell" data-mirror-cell="mirror2">
         <a href="https://mirror2.keiminem.com/manjaro/" aria-labelledby="project-manjaro project-manjaro-mirror2"><span id="project-manjaro-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-manjaro project-manjaro-mirror2 details-manjaro-mirror2"><span id="details-manjaro-mirror2" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>manjaro</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
-    <li class="project-row" data-project data-category="community" data-search="proxmox 프록스목스 프록스모스">
+    <li class="project-row" data-project="proxmox" data-category="community" data-search="proxmox 프록스목스 프록스모스">
+      <div class="project-info">
       <div class="project-identity"><span class="project-index" aria-hidden="true">10</span><h3 id="project-proxmox">Proxmox</h3></div>
       <span class="project-category" data-i18n="communityMirrorsTitle">Community mirror</span>
+      </div>
       <div class="project-links">
+        <div class="mirror-cell" data-mirror-cell="mirror1">
         <a href="https://mirror.keiminem.com/proxmox/" aria-labelledby="project-proxmox project-proxmox-mirror1"><span id="project-proxmox-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-proxmox project-proxmox-mirror1 details-proxmox-mirror1"><span id="details-proxmox-mirror1" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>proxmox</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
+        <div class="mirror-cell" data-mirror-cell="mirror2">
         <a href="https://mirror2.keiminem.com/proxmox/" aria-labelledby="project-proxmox project-proxmox-mirror2"><span id="project-proxmox-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+          <p class="telemetry-reading"><span data-sync-state>Unknown</span><span class="telemetry-size"><span data-i18n="telemetryDiskUsage">Disk usage</span> <strong data-disk-usage>Unavailable</strong></span></p>
+          <p class="telemetry-freshness" data-size-note hidden></p>
+          <p class="telemetry-freshness" data-sample-age></p>
+          <p class="telemetry-freshness" data-freshness-note>No valid snapshot.</p>
+          <details class="telemetry-details">
+            <summary aria-labelledby="project-proxmox project-proxmox-mirror2 details-proxmox-mirror2"><span id="details-proxmox-mirror2" data-i18n="telemetryDetails">Details</span></summary>
+            <div class="telemetry-detail-body">
+              <p class="telemetry-scope"><span data-i18n="telemetryScope">Repository scope</span>: <span>proxmox</span></p>
+              <p class="telemetry-note" data-i18n="telemetryDiskScope">Allocated disk usage, summed across these repositories. Shared hardlinks may be counted once per repository.</p>
+              <dl class="telemetry-metrics" data-group-metrics></dl>
+              <p class="telemetry-note" data-i18n="telemetrySyncScope">Observed sync connections: sampled upstream TCP payload only; missing coverage is unavailable.</p>
+              <p class="telemetry-note" data-i18n="telemetryTrafficScope">Last 60 seconds: HTTP completed response bodies; rsync completed file records, including inter-mirror replication. These are bytes, not instantaneous NIC throughput.</p>
+              <div class="telemetry-repositories" data-repositories></div>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
   </ol>
