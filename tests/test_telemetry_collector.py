@@ -77,41 +77,79 @@ class CollectorTests(unittest.TestCase):
         self.put_json(self.state / "runs" / rid / "state.json", record)
 
     def test_tcp_rates_integrate_and_idle_sibling_does_not_block_group(self):
-        job = self.config['repositories']['gentoo']
-        self.process(123, ['rsync', 'host::repo', job['path']])
-        stat_path = self.proc/'123/stat'
-        stat_path.write_text(stat_path.read_text().replace(' S 1 ', ' S 0 '))
-        text = (f'ESTAB 0 0 127.0.0.1:123 127.0.0.1:456 users:(("rsync",pid=123,fd=3)) '
-                f'uid:{os.getuid()} ino:42 sk:a1\n\t cubic bytes_sent:100 bytes_received:200\n')
-        with mock.patch('telemetry.rates.read_ss', return_value=text):
-            first = self.tick()
-            self.assertIsNone(first['projects']['gentoo']['sync_rx_bps'])
-        with mock.patch('telemetry.rates.read_ss', return_value=text.replace('bytes_received:200', 'bytes_received:500')):
-            second = self.tick(now=self.now+1)
+        stamp = self.now + 1
+        known_zero = {rid: dict(sync_rx_bps=0, sync_tx_bps=0, rates_observed_at=stamp)
+                      for rid in self.config['repositories']}
+        tcp = {rid: dict(value) for rid, value in known_zero.items()}
+        tcp['gentoo']['sync_rx_bps'] = 300
+        with mock.patch('telemetry.rates.sample', return_value=(tcp, {'at': stamp})), \
+             mock.patch('telemetry.http_rates.sample', return_value=(known_zero, {})):
+            second = self.tick(now=stamp)
         self.assertEqual(self.repo(second, 'gentoo')['sync_rx_bps'], 300)
         self.assertEqual(second['projects']['gentoo']['sync_rx_bps'], 300)
-        self.assertIsNone(self.repo(second, 'gentoo-portage')['sync_rx_bps'])
-        self.assertEqual(second['projects']['gentoo']['rates_observed_at'], self.now+1)
+        self.assertEqual(self.repo(second, 'gentoo-portage')['sync_rx_bps'], 0)
+        self.assertEqual(second['projects']['gentoo']['rates_observed_at'], stamp)
         private = json.loads((self.state/'collector.json').read_text())
-        self.assertIn('rates', private)
-        self.assertNotIn('127.0.0.1', json.dumps(private))
+        self.assertEqual(private['rates']['at'], stamp)
+        self.assertIn('http_rates', private)
 
     def test_runtime_collection_uses_socket_sample_clock_not_tick_start(self):
-        self.process(123, ['/bin/sh', self.config['repositories']['gentoo']['script']])
-        with mock.patch.object(collector.time, 'time', side_effect=[self.now, self.now + 0.5]), \
-             mock.patch('telemetry.rates.read_ss', return_value=''):
+        rows = {rid: dict(sync_rx_bps=0, sync_tx_bps=0, rates_observed_at=self.now+.5)
+                for rid in self.config['repositories']}
+        with mock.patch.object(collector.time, 'time', return_value=self.now), \
+             mock.patch('telemetry.rates.sample', return_value=(rows, {'at': self.now+.5})) as tcp, \
+             mock.patch('telemetry.http_rates.sample', return_value=(rows, {})) as http:
             snapshot = collector.collect(self.config, self.state, proc_root=self.proc)
+        self.assertIsNone(tcp.call_args.kwargs['now'])
+        self.assertIsNone(http.call_args.kwargs['now'])
         private = json.loads((self.state / 'collector.json').read_text())
         self.assertEqual(snapshot['collected_at'], self.now)
-        self.assertEqual(private['rates']['at'], self.now + 0.5)
+        self.assertEqual(private['rates']['at'], self.now + .5)
+        self.assertEqual(snapshot['projects']['gentoo']['rates_observed_at'], self.now + .5)
 
-    def test_group_rates_require_every_active_repository_only(self):
-        active = dict(collector.empty_metrics(), state='syncing', sync_rx_bps=3,
-                      sync_tx_bps=5, rates_observed_at=self.now)
-        idle = collector.empty_metrics()
-        self.assertEqual(collector.group_metrics([active, idle])['sync_rx_bps'], 3)
-        self.assertIsNone(collector.group_metrics([active, dict(idle, state='syncing')])['sync_rx_bps'])
-        self.assertIsNone(collector.group_metrics([idle])['sync_rx_bps'])
+    def test_group_rates_include_downloads_when_sync_is_finished(self):
+        download = dict(collector.empty_metrics(), state='completed', sync_rx_bps=3,
+                        sync_tx_bps=500, rates_observed_at=self.now)
+        idle = dict(collector.empty_metrics(), sync_rx_bps=0, sync_tx_bps=0,
+                    rates_observed_at=self.now - .1)
+        result = collector.group_metrics([download, idle])
+        self.assertEqual(result['sync_rx_bps'], 3)
+        self.assertEqual(result['sync_tx_bps'], 500)
+        self.assertEqual(result['rates_observed_at'], self.now - .1)
+        self.assertIsNone(collector.group_metrics([download, collector.empty_metrics()])['sync_tx_bps'])
+        self.assertEqual(collector.group_metrics([idle])['sync_tx_bps'], 0)
+
+    def test_combine_http_and_tcp_requires_both_sources(self):
+        combine = getattr(collector, 'combine_transfer_rates', None)
+        self.assertTrue(callable(combine), 'missing combined live transfer accounting')
+        tcp = dict(sync_rx_bps=10, sync_tx_bps=20, rates_observed_at=self.now)
+        http = dict(sync_rx_bps=3, sync_tx_bps=500, rates_observed_at=self.now+.1)
+        self.assertEqual(combine(tcp, http), dict(sync_rx_bps=13, sync_tx_bps=520,
+                                                rates_observed_at=self.now))
+        for missing in (None, {}, dict(http, sync_rx_bps=None), dict(http, sync_tx_bps=float('inf'))):
+            with self.subTest(missing=missing):
+                self.assertIsNone(combine(tcp, missing)['sync_tx_bps'])
+        self.assertIsNone(combine(tcp, dict(http, rates_observed_at=self.now+3))['sync_tx_bps'])
+        self.assertIsNone(combine(dict(tcp, sync_tx_bps=1e308), dict(http, sync_tx_bps=1e308))['sync_tx_bps'])
+
+    def test_completed_project_still_publishes_combined_download_rates(self):
+        self.observer('archlinux')
+        tcp = {rid: dict(sync_rx_bps=10, sync_tx_bps=20, rates_observed_at=self.now)
+               for rid in self.config['repositories']}
+        http = {rid: dict(sync_rx_bps=3, sync_tx_bps=500, rates_observed_at=self.now+.1)
+                for rid in self.config['repositories']}
+        with mock.patch('telemetry.rates.sample', return_value=(tcp, {})), \
+             mock.patch('telemetry.http_rates.sample', return_value=(http, {})):
+            snapshot = self.tick()
+        project = snapshot['projects']['archlinux']
+        self.assertEqual(project['state'], 'completed')
+        self.assertEqual(project['sync_tx_bps'], 520)
+        self.assertEqual(project['sync_rx_bps'], 13)
+        self.assertEqual(project['rates_observed_at'], self.now)
+        http['archlinux']['sync_rx_bps'] = None
+        with mock.patch('telemetry.rates.sample', return_value=(tcp, {})), \
+             mock.patch('telemetry.http_rates.sample', return_value=(http, {})):
+            self.assertIsNone(self.tick()['projects']['archlinux']['sync_tx_bps'])
 
     def test_observer_result_and_partial_group(self):
         self.observer("gentoo")

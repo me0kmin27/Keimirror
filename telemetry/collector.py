@@ -8,8 +8,8 @@ must be the fourteen repository IDs (not lossy ten-project labels).
 Limits: 256 KiB per log/tick, 64 KiB initial sync-log tail, 2 MiB JSON inputs,
 8192 distinct delivery timestamp/repository pairs, 16384 /proc entries, 512
 OPNsense log-directory entries, 2 MiB/4096 sockets per TCP sample (2 seconds),
-and a 10-second CLI deadline. No du/tree scan, network request, or runtime HTTP
-server. Tick-level errors leave the public snapshot untouched; missing individual
+and a 10-second CLI deadline. No du/tree scan, remote network request, or collector-owned
+HTTP server. Live HTTP counters use a bounded local Unix socket. Tick-level errors leave the public snapshot untouched; missing individual
 sources yield null/unknown metrics.
 
 Delivery cursors start at EOF, never replay a historical raw tail, and reset
@@ -20,7 +20,7 @@ Rsync prefix timestamps were removed by the supplied audit. Its counter is the
 trailing *observed* window of newly completed numeric XFER/send records, not a
 historic timestamp reconstruction or NIC total. HTTP uses completed-request ts.
 
-Upstream rates cover only observed sync connections attributed by rates.py;
+Transfer rates combine attributed upstream/delivery sockets with live HTTP counters;
 missing coverage stays null. No NIC totals or progress2 reconstructed bytes are
 substituted. Kali completion
 requires same-run stage1/stage2 return codes plus Mirrorsync done; yearless log
@@ -47,9 +47,10 @@ from pathlib import Path
 from typing import Any, TypeGuard
 
 if __package__:
-    from . import rates
+    from . import rates, http_rates
 else:  # Installed collector.py is also a directly executable CLI.
     import rates
+    import http_rates
 
 PROJECTS = {
     "archlinux": ["archlinux"], "gentoo": ["gentoo", "gentoo-portage"],
@@ -576,6 +577,27 @@ def delivery_sample(path, previous, source, now, max_read):
         return None, None
 
 
+def combine_transfer_rates(tcp, http):
+    """Compatibility field names now cover measured HTTP plus observed rsync TCP.
+
+    Missing coverage is not zero; independently observed windows must overlap.
+    """
+    unknown = dict(sync_rx_bps=None, sync_tx_bps=None, rates_observed_at=None)
+    fields = tuple(unknown)
+    for source in (tcp, http):
+        if not isinstance(source, dict) or any(
+                type(source.get(key)) not in (int, float) or not math.isfinite(source[key])
+                or source[key] < 0 for key in fields):
+            return unknown
+    if abs(tcp['rates_observed_at'] - http['rates_observed_at']) > 2:
+        return unknown
+    rx, tx = (tcp[key] + http[key] for key in fields[:2])
+    if not math.isfinite(rx) or not math.isfinite(tx):
+        return unknown
+    return dict(sync_rx_bps=rx, sync_tx_bps=tx,
+                rates_observed_at=min(tcp['rates_observed_at'], http['rates_observed_at']))
+
+
 def group_metrics(rows):
     result = empty_metrics()
     result["state"] = next((s for s in ("syncing", "failed", "unknown")
@@ -599,12 +621,12 @@ def group_metrics(rows):
                 result[field] = total
     result["traffic_observed_since"] = max((r["traffic_observed_since"] for r in rows
                                             if r["traffic_observed_since"] is not None), default=None)
-    active_rows = [r for r in rows if r['state'] == 'syncing']
-    if active_rows and all(r['sync_rx_bps'] is not None and r['sync_tx_bps'] is not None
-                           and r['rates_observed_at'] is not None for r in active_rows):
-        result['sync_rx_bps'] = sum(r['sync_rx_bps'] for r in active_rows)
-        result['sync_tx_bps'] = sum(r['sync_tx_bps'] for r in active_rows)
-        result['rates_observed_at'] = min(r['rates_observed_at'] for r in active_rows)
+    # Traffic is independent of upstream sync state: completed mirrors still serve downloads.
+    if rows and all(r['sync_rx_bps'] is not None and r['sync_tx_bps'] is not None
+                    and r['rates_observed_at'] is not None for r in rows):
+        result['sync_rx_bps'] = sum(r['sync_rx_bps'] for r in rows)
+        result['sync_tx_bps'] = sum(r['sync_tx_bps'] for r in rows)
+        result['rates_observed_at'] = min(r['rates_observed_at'] for r in rows)
     result["repositories"] = rows
     return result
 
@@ -710,9 +732,10 @@ def collect(config, state_dir, *, now=None, proc_root: str | Path = "/proc", max
         row["traffic_observed_since"] = observed_since
         rows[rid] = dict(id=rid, **row)
     sampled, private['rates'] = rates.sample(config, private.get('rates'), now=sample_now, proc_root=proc_root)
+    http_sampled, private['http_rates'] = http_rates.sample(
+        config, private.get('http_rates'), now=sample_now, proc_root=str(proc_root))
     for rid, row in rows.items():
-        if row['state'] == 'syncing':
-            row.update(sampled[rid])
+        row.update(combine_transfer_rates(sampled.get(rid), http_sampled.get(rid)))
     private["logs"] = {rid: logs.get(rid) for rid in REPOSITORIES}
     private["active"] = {rid: value for rid, value in seen_active.items() if rid in REPOSITORIES and timestamp(value, now)}
     private["success"] = {rid: row["last_success_at"] for rid, row in rows.items()}
