@@ -1,22 +1,119 @@
-<section class="card" aria-labelledby="project-status-title">
-  <h2 id="project-status-title" data-i18n="projectStatusTitle">Mirrored project status</h2>
-  <p data-i18n="projectStatusBody">Official and community mirror coverage at a glance.</p>
-  <dl class="status-list">
-    <div class="status-group official">
-      <dt data-i18n="officialMirrorsTitle">Official mirrors</dt>
-      <dd><span class="badge tier" data-i18n="tierOneBadge">Tier 1</span> Arch Linux</dd>
-      <dd>Gentoo</dd>
-      <dd>Kali Linux</dd>
-      <dd>CachyOS</dd>
-      <dd>Artix</dd>
-      <dd>OPNsense</dd>
+<section class="project-directory" id="projects" data-project-directory aria-labelledby="project-status-title">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow" data-i18n="projectDirectoryEyebrow">The directory</p>
+      <h2 id="project-status-title" data-i18n="projectStatusTitle">Mirrored projects</h2>
     </div>
-    <div class="status-group community">
-      <dt data-i18n="communityMirrorsTitle">Community mirrors</dt>
-      <dd>EndeavourOS</dd>
-      <dd>Fyra Labs</dd>
-      <dd>Manjaro</dd>
-      <dd>Proxmox</dd>
+    <p class="section-description" data-i18n="projectStatusBody">Official and community mirror coverage at a glance.</p>
+  </div>
+  <div class="directory-toolbar">
+    <div class="project-search-field">
+      <label for="project-search" data-i18n="projectSearchLabel">Find a project</label>
+      <div class="search-input-wrap">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+        <input id="project-search" type="search" placeholder="Search by name…" data-i18n-placeholder="projectSearchPlaceholder" autocomplete="off" spellcheck="false" aria-controls="project-list">
+      </div>
     </div>
-  </dl>
+    <div class="project-filters" role="group" aria-label="Project categories" data-i18n-aria-label="projectFiltersLabel">
+      <button class="button filter-button" type="button" data-project-filter="all" aria-pressed="true"><span data-i18n="filterAll">All projects</span> <span class="filter-total" aria-hidden="true">10</span></button>
+      <button class="button filter-button" type="button" data-project-filter="official" aria-pressed="false" data-i18n="filterOfficial">Official</button>
+      <button class="button filter-button" type="button" data-project-filter="community" aria-pressed="false" data-i18n="filterCommunity">Community</button>
+    </div>
+  </div>
+  <div class="directory-list-heading" aria-hidden="true">
+    <span data-i18n="projectColumn">Project / distribution</span>
+    <span data-i18n="coverageColumn">Mirror participation</span>
+    <span data-i18n="browseColumn">Browse files</span>
+  </div>
+  <ol class="project-list" id="project-list">
+    <li class="project-row" data-project data-category="official" data-search="arch linux archlinux 아치 리눅스">
+      <div class="project-identity"><span class="project-index" aria-hidden="true">01</span><h3 id="project-archlinux">Arch Linux</h3><span class="badge tier" data-i18n="tierOneBadge">Tier 1</span></div>
+      <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      <div class="project-links">
+        <a href="https://mirror.keiminem.com/archlinux/" aria-labelledby="project-archlinux project-archlinux-mirror1"><span id="project-archlinux-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mirror2.keiminem.com/archlinux/" aria-labelledby="project-archlinux project-archlinux-mirror2"><span id="project-archlinux-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </li>
+    <li class="project-row" data-project data-category="official" data-search="gentoo 젠투">
+      <div class="project-identity"><span class="project-index" aria-hidden="true">02</span><h3 id="project-gentoo">Gentoo</h3></div>
+      <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      <div class="project-links">
+        <a href="https://mirror.keiminem.com/gentoo/" aria-labelledby="project-gentoo project-gentoo-mirror1"><span id="project-gentoo-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mirror2.keiminem.com/gentoo/" aria-labelledby="project-gentoo project-gentoo-mirror2"><span id="project-gentoo-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </li>
+    <li class="project-row" data-project data-category="official" data-search="kali linux 칼리 리눅스">
+      <div class="project-identity"><span class="project-index" aria-hidden="true">03</span><h3 id="project-kali">Kali Linux</h3></div>
+      <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      <div class="project-links">
+        <a href="https://mirror.keiminem.com/kali/" aria-labelledby="project-kali project-kali-mirror1"><span id="project-kali-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mirror2.keiminem.com/kali/" aria-labelledby="project-kali project-kali-mirror2"><span id="project-kali-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </li>
+    <li class="project-row" data-project data-category="official" data-search="cachyos 캐시 캐시OS 카치">
+      <div class="project-identity"><span class="project-index" aria-hidden="true">04</span><h3 id="project-cachyos">CachyOS</h3></div>
+      <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      <div class="project-links">
+        <a href="https://mirror.keiminem.com/cachyos/" aria-labelledby="project-cachyos project-cachyos-mirror1"><span id="project-cachyos-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mirror2.keiminem.com/cachyos/" aria-labelledby="project-cachyos project-cachyos-mirror2"><span id="project-cachyos-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </li>
+    <li class="project-row" data-project data-category="official" data-search="artix 아틱스 아르틱스">
+      <div class="project-identity"><span class="project-index" aria-hidden="true">05</span><h3 id="project-artix">Artix</h3></div>
+      <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      <div class="project-links">
+        <a href="https://mirror.keiminem.com/artix/" aria-labelledby="project-artix project-artix-mirror1"><span id="project-artix-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mirror2.keiminem.com/artix/" aria-labelledby="project-artix project-artix-mirror2"><span id="project-artix-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </li>
+    <li class="project-row" data-project data-category="official" data-search="opnsense 오픈센스">
+      <div class="project-identity"><span class="project-index" aria-hidden="true">06</span><h3 id="project-opnsense">OPNsense</h3></div>
+      <span class="project-category" data-i18n="officialMirrorsTitle">Official mirror</span>
+      <div class="project-links">
+        <a href="https://mirror.keiminem.com/opnsense/" aria-labelledby="project-opnsense project-opnsense-mirror1"><span id="project-opnsense-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mirror2.keiminem.com/opnsense/" aria-labelledby="project-opnsense project-opnsense-mirror2"><span id="project-opnsense-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </li>
+    <li class="project-row" data-project data-category="community" data-search="endeavouros 엔데버 엔데버OS">
+      <div class="project-identity"><span class="project-index" aria-hidden="true">07</span><h3 id="project-endeavouros">EndeavourOS</h3></div>
+      <span class="project-category" data-i18n="communityMirrorsTitle">Community mirror</span>
+      <div class="project-links">
+        <a href="https://mirror.keiminem.com/endeavouros/" aria-labelledby="project-endeavouros project-endeavouros-mirror1"><span id="project-endeavouros-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mirror2.keiminem.com/endeavouros/" aria-labelledby="project-endeavouros project-endeavouros-mirror2"><span id="project-endeavouros-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </li>
+    <li class="project-row" data-project data-category="community" data-search="fyra labs 파이라 피라">
+      <div class="project-identity"><span class="project-index" aria-hidden="true">08</span><h3 id="project-fyralabs">Fyra Labs</h3></div>
+      <span class="project-category" data-i18n="communityMirrorsTitle">Community mirror</span>
+      <div class="project-links">
+        <a href="https://mirror.keiminem.com/fyralabs/" aria-labelledby="project-fyralabs project-fyralabs-mirror1"><span id="project-fyralabs-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mirror2.keiminem.com/fyralabs/" aria-labelledby="project-fyralabs project-fyralabs-mirror2"><span id="project-fyralabs-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </li>
+    <li class="project-row" data-project data-category="community" data-search="manjaro 만자로">
+      <div class="project-identity"><span class="project-index" aria-hidden="true">09</span><h3 id="project-manjaro">Manjaro</h3></div>
+      <span class="project-category" data-i18n="communityMirrorsTitle">Community mirror</span>
+      <div class="project-links">
+        <a href="https://mirror.keiminem.com/manjaro/" aria-labelledby="project-manjaro project-manjaro-mirror1"><span id="project-manjaro-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mirror2.keiminem.com/manjaro/" aria-labelledby="project-manjaro project-manjaro-mirror2"><span id="project-manjaro-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </li>
+    <li class="project-row" data-project data-category="community" data-search="proxmox 프록스목스 프록스모스">
+      <div class="project-identity"><span class="project-index" aria-hidden="true">10</span><h3 id="project-proxmox">Proxmox</h3></div>
+      <span class="project-category" data-i18n="communityMirrorsTitle">Community mirror</span>
+      <div class="project-links">
+        <a href="https://mirror.keiminem.com/proxmox/" aria-labelledby="project-proxmox project-proxmox-mirror1"><span id="project-proxmox-mirror1" data-i18n="mirrorOneTitle">Mirror 1</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mirror2.keiminem.com/proxmox/" aria-labelledby="project-proxmox project-proxmox-mirror2"><span id="project-proxmox-mirror2" data-i18n="mirrorTwoTitle">Mirror 2</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </li>
+  </ol>
+  <div class="directory-empty" data-project-empty hidden>
+    <h3 data-i18n="projectEmptyTitle">No matching projects</h3>
+    <p data-i18n="projectEmptyBody">Try another name or show all projects.</p>
+    <button class="button" type="button" data-project-reset data-i18n="projectReset">Reset search</button>
+  </div>
+  <div class="directory-footer">
+    <p data-project-count role="status" aria-live="polite">10 projects</p>
+    <p data-i18n="projectDirectoryNote">Choose a mirror to browse. Verify downloads with upstream checksums and signatures.</p>
+  </div>
 </section>

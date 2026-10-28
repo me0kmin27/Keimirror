@@ -13,19 +13,45 @@ permissions:
 
 concurrency:
   group: keimirror-production-deploy
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  validate:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      commit_sha: ${{ steps.validated_commit.outputs.commit_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || 'main' }}
+      - name: Record checked-out commit
+        id: validated_commit
+        run: echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python3 tools/build.py --check
+      - run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
   deploy:
+    needs: validate
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: keimirror
 
     steps:
-      - name: Checkout merged code
+      - name: Checkout validated code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha || 'main' }}
+          ref: ${{ needs.validate.outputs.commit_sha }}
 
       - name: Prepare SSH
         run: |
@@ -42,7 +68,7 @@ jobs:
 
       - name: Upload to server
         run: |
-          rsync -az --delete \
+          rsync -az --delay-updates --delete-delay \
             --exclude ".git" \
             --exclude ".github" \
             --exclude "node_modules" \
@@ -52,6 +78,11 @@ jobs:
             --exclude "playwright.config.js" \
             --exclude "package.json" \
             --exclude "package-lock.json" \
+            --exclude "tools" \
+            --exclude "templates" \
+            --exclude "__pycache__" \
+            --exclude "*.pyc" \
+            --exclude "docs" \
             -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.DEPLOY_PORT }}" \
             ./ \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
