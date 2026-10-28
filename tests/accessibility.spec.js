@@ -48,6 +48,25 @@ for (const language of ['en', 'ko']) {
   }
 }
 
+test('sponsor opener retains contrast throughout its open-state transition', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('keimirror-theme', 'light'));
+  await page.goto('/?lang=ko');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
+  // Stretch only timing to make the real cross-fade deterministic on every runner.
+  await page.addStyleTag({ content: '.donate-toggle { transition-duration: 10s !important; transition-timing-function: linear !important; }' });
+  await page.locator('[data-sponsor-toggle]').click();
+  await page.locator('[data-sponsor-toggle]').evaluate(button => {
+    getComputedStyle(button).color;
+    for (const animation of button.getAnimations()) {
+      animation.pause();
+      animation.currentTime = Number(animation.effect.getTiming().duration) / 2;
+    }
+  });
+  await expect(page.locator('[data-sponsor-modal]')).toBeVisible();
+  const result = await new AxeBuilder({ page }).withRules(['color-contrast']).analyze();
+  expect(result.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => n.target) }))).toEqual([]);
+});
+
 test('IDs are unique and every internal section link resolves', async ({ page }) => {
   await page.goto('/');
   const violations = await page.evaluate(() => {

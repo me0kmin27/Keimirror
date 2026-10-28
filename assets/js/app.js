@@ -233,7 +233,7 @@ function setSponsorPopup(open) {
     if (sponsorOpener?.isConnected) sponsorOpener.focus();
   }
   document.querySelectorAll('[data-sponsor-toggle]').forEach((trigger) => {
-    trigger.classList.toggle('primary', open);
+    // Keep opener colors stable: inverted foreground/background cross-fades lose contrast.
     trigger.setAttribute('aria-expanded', String(open));
   });
 }
