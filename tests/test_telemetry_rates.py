@@ -305,16 +305,81 @@ class RateTests(unittest.TestCase):
                                                    rates_observed_at=None))
                     self.assertEqual(state, {})
 
-    def test_ownerless_diag_blocks_only_empty_zero_not_known_rates(self):
+    def test_diag_only_terminal_states_preserve_unrelated_empty_zero(self):
         from telemetry import rates
         (self.proc/'self/ns').mkdir(parents=True)
         (self.proc/'self/ns/net').symlink_to('net:[123]')
-        unknown = dict(ino=55, cookie=99, uid=0, rx=0, tx=0, state=1)
-        with mock.patch.object(rates.time, 'monotonic', return_value=100):
-            _, old = rates.sample(self.config, None, now=100, proc_root=self.proc, ss_reader=lambda: '', diag_reader=lambda: [unknown])
-        with mock.patch.object(rates.time, 'monotonic', return_value=101):
-            rows, _ = rates.sample(self.config, old, now=101, proc_root=self.proc, ss_reader=lambda: '', diag_reader=lambda: [unknown])
-        self.assertIsNone(rows['a']['sync_tx_bps'])
+        for status in (6, 4, 5):  # TIME-WAIT, FIN-WAIT-1, FIN-WAIT-2
+            with self.subTest(state=status):
+                diag = [dict(ino=0, cookie=99, uid=0, rx=None, tx=None, state=status)]
+                def take(old, now):
+                    with mock.patch.object(rates.time, 'monotonic', return_value=now):
+                        return rates.sample(self.config, old, now=now, proc_root=self.proc,
+                                            ss_reader=lambda: '', diag_reader=lambda: diag)
+                rows, old = take(None, 100)
+                self.assertIsNone(rows['b']['sync_tx_bps'])  # still needs two observations
+                rows, state = take(old, 101)
+                self.assertEqual(rows['b'], dict(sync_rx_bps=0, sync_tx_bps=0,
+                                                 rates_observed_at=101))
+                self.assertEqual(state['repositories'], {'a': {}, 'b': {}})
+
+    def test_diag_only_terminal_cookie_loss_invalidates_previous_repo(self):
+        from telemetry import rates
+        for pid in ('self', '11'):
+            (self.proc/pid/'ns').mkdir(parents=True)
+            (self.proc/pid/'ns/net').symlink_to('net:[123]')
+        (self.proc/'11/fd').mkdir()
+        (self.proc/'11/fd/3').symlink_to('socket:[42]')
+        def take(text, diag, old, now):
+            with mock.patch.object(rates.time, 'monotonic', return_value=now):
+                return rates.sample(self.config, old, now=now, proc_root=self.proc,
+                                    ss_reader=lambda: text, diag_reader=lambda: diag)
+        known = dict(ino=42, cookie=161, uid=os.getuid(), rx=200, tx=100, state=1)
+        _, old = take(self.socket(), [known], None, 100)
+        self.assertIn('161', old['repositories']['a'])
+        for status in (6, 4, 5):
+            with self.subTest(state=status):
+                departed = dict(known, ino=0, rx=None, tx=None, state=status)
+                rows, state = take('', [departed], old, 101)
+                self.assertEqual(rows['a'], dict(sync_rx_bps=None, sync_tx_bps=None,
+                                                 rates_observed_at=None))
+                self.assertNotIn('a', state['repositories'])  # not an empty baseline
+                self.assertEqual(rows['b'], dict(sync_rx_bps=0, sync_tx_bps=0,
+                                                 rates_observed_at=101))
+                rows, _ = take('', [departed], state, 102)
+                self.assertIsNone(rows['a']['sync_tx_bps'])  # must re-prime first
+
+    def test_ownerless_diag_blocks_only_empty_zero_not_known_rates(self):
+        from telemetry import rates
+        for pid in ('self', '11'):
+            (self.proc/pid/'ns').mkdir(parents=True)
+            (self.proc/pid/'ns/net').symlink_to('net:[123]')
+        (self.proc/'11/fd').mkdir()
+        (self.proc/'11/fd/3').symlink_to('socket:[42]')
+        known = dict(ino=42, cookie=161, uid=os.getuid(), rx=200, tx=100, state=1)
+        def take(text, diag, old, now):
+            with mock.patch.object(rates.time, 'monotonic', return_value=now):
+                return rates.sample(self.config, old, now=now, proc_root=self.proc,
+                                    ss_reader=lambda: text, diag_reader=lambda: diag)
+        # ESTAB/SYN and other closing states remain fail-closed, as do unknowns.
+        for status in (1, 2, 3, 7, 8, 9, 11, 0, 255):
+            for counters in (None, 0):
+                with self.subTest(state=status, counters=counters):
+                    unknown = dict(ino=0, cookie=99, uid=0, rx=counters,
+                                   tx=counters, state=status)
+                    _, old = take('', [unknown], None, 100)
+                    rows, state = take('', [unknown], old, 101)
+                    self.assertEqual(state['repositories'], {})
+                    for row in rows.values():
+                        self.assertEqual(row, dict(sync_rx_bps=None, sync_tx_bps=None,
+                                                   rates_observed_at=None))
+                    _, old = take(self.socket(), [known, unknown], None, 100)
+                    advanced = dict(known, rx=500, tx=160)
+                    rows, state = take(self.socket(), [advanced, unknown], old, 101)
+                    self.assertEqual(rows['a'], dict(sync_rx_bps=300, sync_tx_bps=60,
+                                                     rates_observed_at=101))
+                    self.assertIsNone(rows['b']['sync_tx_bps'])
+                    self.assertEqual(set(state['repositories']), {'a'})
 
     def test_delivery_boundary_dependencies_revalidated_without_becoming_owners(self):
         from telemetry import rates

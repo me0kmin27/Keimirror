@@ -39,6 +39,10 @@ MAX_SOCKETS = 4096
 MAX_COUNTER = 2**53 - 1
 # A delayed tick is unknown, never a long-window rate labelled as live.
 MAX_SAMPLE_SECONDS = 2
+# Linux TCP states requested by read_diag, using the ss record names.
+TCP_STATES = {1: 'ESTAB', 2: 'SYN-SENT', 3: 'SYN-RECV', 4: 'FIN-WAIT-1',
+              5: 'FIN-WAIT-2', 6: 'TIME-WAIT', 7: 'UNCONN', 8: 'CLOSE-WAIT',
+              9: 'LAST-ACK', 10: 'LISTEN', 11: 'CLOSING'}
 
 
 def read_ss():
@@ -390,7 +394,10 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
                 joined.append(record)
             for key, item in by_key.items():
                 if key not in seen and item['state'] != 10:
-                    joined.append('UNKNOWN 0 0 - - ino:%s sk:%x' % key)
+                    # Preserve terminal-state empty coverage, but retain the
+                    # cookie so lost previous ownership still invalidates its job.
+                    status = TCP_STATES.get(item['state'], 'UNKNOWN')
+                    joined.append('%s 0 0 - - ino:%s sk:%x' % (status, *key))
             records = joined
         # Production uses the actual observation time, not collector startup.
         # An explicit timestamp keeps isolated fixtures deterministic.
