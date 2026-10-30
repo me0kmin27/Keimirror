@@ -57,8 +57,9 @@ regression requires a fresh baseline. No completed-request log delta is used.
   body reading/discarding. Bodyfilter `request_length` is deliberately unused:
   nginx can temporarily include future pipelined bytes there.
 * Other methods, any chunked/nonzero-length body, discard paths, recognized
-  pipeline requests, late/error-only registration, HTTP >=400 responses,
-  internal redirects and send/connection errors mark the request uncertain.
+  pipeline requests, late/error-only registration, internal redirects and
+  send/connection errors mark the request uncertain. HTTP >=400 remains
+  uncertain **except** built-in 403/404/416 with the proof below.
   RX for unsupported requests stays uncounted; HTTP/1 TX still progresses.
   Request-pool cleanup decrements active uncertainty, never cumulative history.
 * HTTP/2 and HTTP/3 requests are explicitly uncertain and are NOT assigned a
@@ -86,6 +87,53 @@ before the next project attaches. Shared counters/status snapshots use nginx's
 shared-memory mutex; this implementation favors simple consistency over
 lock-free scalability. Representative production concurrency overhead remains
 unmeasured and is a canary acceptance item.
+
+## Narrow built-in error coverage
+
+A response status alone is not evidence of missing byte accounting. The
+403/404/416 exception requires matching `err_status` (the built-in special
+response path), no upstream, no `error_page` processing, no internal redirect,
+the original main request and repository, a still-healthy early binding, and
+both original handlers plus both installed connection wrappers. It never clears
+uncertainty already raised. Unproved errors (including custom `return 404
+"body"`, upstream errors, 400/413/5xx) remain uncertain. Merely configuring
+`error_page` can conservatively set nginx's `error_page` flag even when no rule
+matches; this exception deliberately does not relax that case.
+
+The Debian-patched lifecycle establishes why these specific paths work:
+
+* `ngx_http_request.c` finishes header `request_length` before POST_READ. The
+  existing bodyless/nonpipeline eligibility check and one-time RX add are
+  unchanged; error-body discard with no request body reads no additional RX.
+* `ngx_http_special_response.c` sets `err_status`, emits a normal header and
+  memory-buffer body through the output filter. The existing `send_chain` and
+  nested `send` wrappers observe actual `c->sent` progress, including headers.
+* Range rejection calls `ngx_http_filter_finalize_request`, which clears module
+  contexts before the second header pass. The connection-owned request binding
+  survives; it prevents duplicate RX or reclassification of 416.
+* `error_page` URI/named-location redirects also clear contexts, but set
+  `internal`. They remain uncertain, including redirects to the same project,
+  another project, and `=200` reclassification. Subrequests cannot create a
+  second main-request binding; their output stays with the initial project.
+
+`tests/test_errors.py` exercises real static missing-file 404, access-denied
+403, and unsatisfiable-range 416 responses against the pinned binary. Full RX
+matches the exact request and TX matches all received plaintext bytes, not only
+the HTML body. At 64 bytes/second each error has increasing TX while the access
+log is still empty, then exact final equality. Tests also cover HTTP/1.0 GET/HEAD
+and TLS 404, sequential keepalive errors/project switching, SSI subrequest
+errors, internal/named error pages, 416-to-200 reclassification, body/discard
+and 413, custom/unproved error output, and an aborted built-in error. Existing
+304, early 400, H2, upgrade/101, pipeline and send-error tests remain in force.
+Deterministic C tests reject missing/replaced hooks and identity/proof gaps.
+
+The initial new exact-byte test failed against the unmodified C module for all
+three statuses despite exact RX/TX equality; it passed after the narrow guard
+change. The preserved baseline artifact also fails the in-flight uncertainty
+assertion. No shared-memory or JSON ABI, reader, counter-addition code, or TCP
+coverage predicate changed. This proves a local false-uncertainty path, **not**
+which C branch caused a past production interval. Unresolved TCP ownership and
+coverage transitions remain separate blockers to continuous combined rates.
 
 ## Configuration (parent owns deployment)
 

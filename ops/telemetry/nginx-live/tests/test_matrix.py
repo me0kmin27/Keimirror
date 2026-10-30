@@ -209,15 +209,14 @@ class Matrix(unittest.TestCase):
             for row in s.status()['repositories'].values():
                 self.assertEqual(row,dict(rx_bytes=0,tx_bytes=0,uncertain=0,active_uncertain=0))
 
-    def test_error_and_internal_redirect_are_uncertain(self):
+    def test_internal_redirect_is_uncertain(self):
         with Server('location = /archlinux/redirect { rewrite ^ /artix/file last; }') as s:
             file(s); file(s,'artix')
-            for path in ('/archlinux/missing','/archlinux/redirect'):
-                before=s.status()['repositories']['archlinux']
-                _,data=exchange(s,path)
-                after=s.status()['repositories']['archlinux']
-                self.assertGreater(after['uncertain'],before['uncertain'])
-                self.assertEqual(after['tx_bytes']-before['tx_bytes'],len(data))
+            before=s.status()['repositories']['archlinux']
+            _,data=exchange(s,'/archlinux/redirect')
+            after=s.status()['repositories']['archlinux']
+            self.assertGreater(after['uncertain'],before['uncertain'])
+            self.assertEqual(after['tx_bytes']-before['tx_bytes'],len(data))
             self.assertEqual(s.status()['repositories']['artix']['tx_bytes'],0)
 
     def test_http2_is_explicitly_uncertain_not_false_zero(self):
