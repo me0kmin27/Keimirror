@@ -19,7 +19,7 @@
     "ops/telemetry/http-reexec/transaction.py": "007c171e31d97fcf18921fd58b5a3ade6bb3954d2d986478c5378ca025aeb721",
     "ops/telemetry/http-reexec/isolated.py": "2b5ad5d55992e2834e5806d374effc0acfd791839b999da3e80374897bf65cf5",
     "ops/telemetry/http-reexec/project-live.versioned.conf": "d9813d64c9df38232f1ed7528d90d8b9aa2acb089c62c5a08093ecc964fdbfd7",
-    "tests/test_http_reexec.py": "ca2c263edb21cf4d31a02309e3761e5081de6cc938c0674a6c52f151a251a725",
+    "tests/test_http_reexec.py": "73f5453f904651876687e8a052606f57ee834c868f9683484d753fa3cf9819f9",
     "ops/telemetry/http-reexec/inventory.py": "8319ceac5800ce89340f8e1a0463753c74907ecedf7829dc6459ee7a3cb08e61",
     "ops/telemetry/http-reexec/host-readonly-configs.json": "349f9be9512c89efbb21808a3b6cc895c0607cb9a34416a2486e8c2aadf6f539"
   },

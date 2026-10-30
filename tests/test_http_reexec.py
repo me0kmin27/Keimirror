@@ -201,7 +201,9 @@ class ReadOnlyConfigTests(unittest.TestCase):
     def test_exact_nonroot_parent_chain_is_only_readonly_exception(self):
         import tempfile, os, stat
         m = load()
-        with tempfile.TemporaryDirectory() as d:
+        # /tmp is deliberately rejected by the production ancestor policy.
+        # Use the caller's private scratch directory, or the CI user's home.
+        with tempfile.TemporaryDirectory(dir=os.environ.get('TMPDIR') or Path.home()) as d:
             p = Path(d) / 'asn.conf'; p.write_text('# existing operator authority')
             parents = {str(a): dict(uid=a.lstat().st_uid, gid=a.lstat().st_gid,
                        mode=stat.S_IMODE(a.lstat().st_mode), dev=a.lstat().st_dev,
