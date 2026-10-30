@@ -10,18 +10,30 @@ restart, or deployment was performed for this PR.
    Its feature-absent RED was executed; forward and rollback GREEN have **not**
    run. The earlier `upgrade-reexec` mechanism tests are not a substitute for
    exercising these new installer bytes.
-2. Read-only historical inventory records a non-root-owned existing
-   `/etc/nginx/conf.d/asn.conf` on mirror2. This candidate deliberately rejects
-   untrusted configuration paths. Resolve that policy against fresh inventory
-   in review; do not chmod production files or silently weaken the gate.
-3. Fresh host-specific retained-backup bindings, real download byte/hash inputs,
-   full private host manifests, and independent installer review remain required.
-   `host-baselines.json` is discovery evidence, **not ready-to-apply input**.
-4. Before approval, complete real interruption/resume, syntax-failure, failed
-   startup, long-client drain and independent-phase deadline tests. Review the
-   cooperative timeout boundary: subprocesses have deadlines, but filesystem
-   operations are not hard-preempted. A retained executor must not kill nginx
-   clients or its cgroup when its own command deadline expires.
+2. Fresh read-only inventory confirms mirror2's `asn.conf`, `nginx.conf`,
+   configuration ancestors and existing include links have operator authority
+   (UID/GID 1000); this is **not evidence of a new vulnerability**. The narrowly
+   scoped preservation policy is now implemented and frozen in
+   `host-readonly-configs.json`: 31 exact existing file/link entries on host 20,
+   none on host 19. Review these fresh bindings before preparing an apply input.
+   Never chmod/chown or rewrite operator-owned configuration.
+3. Both hosts' existing root-owned archive hashes, active/enabled telemetry
+   timers, actual document root and 11-byte public HTTP download were freshly
+   verified. `host-baselines.json` records actual source-file and response hashes;
+   it is **not ready-to-apply input**. The mirror lastupdate file can change with
+   synchronization: refresh rather than reuse stale download approval. HTTPS
+   checks separately failed (curl 60 on host 19, curl 7 on host 20); no insecure
+   TLS fallback was used and HTTP success is not an HTTPS success claim.
+4. Real privileged interruption/resume, syntax/startup failure and long-client
+   deadline acceptance remain unrun. Nonprivileged coverage now exercises real
+   atomic/fsync journal persistence, before/after dangerous orchestration windows,
+   real disposable file restoration, and an actual executor-only SIGALRM.
+   The 270-second forward budget plus reserved maximum 180-second recovery uses
+   one persisted absolute 450-second ceiling; recovery/resume cannot reset it.
+   Phase alarms also interrupt blocking Python operations, and every subprocess
+   timeout is clipped to the active absolute deadline. No timeout kills nginx,
+   workers or a cgroup. Kernel uninterruptible I/O/scheduling is not a realtime
+   guarantee; privileged runtime validation is still required.
 
 The complete user acceptance request is therefore **not yet satisfied**.
 
@@ -61,11 +73,17 @@ second `load_module` or overwrite an already mapped module.
   precede old QUIT. New MainPID adoption and service/public-path health are
   checked. A post-commit failure must not signal a departed old PID.
 - `rollback`: restore exact loadconf bytes/uid/gid/mode/mtime, syntax-check,
-  old HUP and old worker readiness **before** new QUIT. No TERM/KILL or broad
+  old HUP and old worker readiness **before** new QUIT. While the new master
+  exists, old HUP restarts its workers without rereading configuration. A durable
+  `new-quit-intent` resume verifies old readiness without sending old HUP again. No TERM/KILL or broad
   process matching exists in the transaction. Drain timeout retains processes.
 - `reconcile`: only reconciles a persisted commit-intent/new identity; it does
   not guess whether to signal an old generation. Other interrupted phases use
-  conservative rollback. Same-boot/netns only; reboot recovery is not claimed.
+  conservative rollback. An ambiguous USR2 intent without a published verified
+  new master is an explicit incomplete-reconciliation error, not rollback success;
+  USR2 is never repeated. Once old QUIT may have happened, switching back to the
+  legacy module requires a separately reviewed new upgrade, not HUP of a retired
+  master. Same-boot/netns only; reboot recovery is not claimed.
 
 Signal delivery uses a pidfd opened before validating PID/start identity, so
 PID reuse cannot retarget a signal. Mappings require matching inode/device,
@@ -83,6 +101,22 @@ Any nonzero worker shutdown timeout also fails closed because nginx may close
 clients when it expires. The installer never rewrites that production policy.
 
 ## Commands (review candidate only)
+
+Installer and harness source must first be staged as reviewed root-owned files
+under root-controlled, non-world-writable directories. Direct privileged execution
+from this operator-owned checkout fails closed before the harness creates a unit.
+The readonly-config exception NEVER applies to installer/source/package/stage,
+reader execution inputs, candidate module, or the sole writable loadconf. The
+production loadconf is UID/GID 0, mode 0664 (write only by root/root group), under
+root-owned non-world-writable directories; its metadata is preserved.
+
+Optional `readonly_configs` is an exact path-to-frozen-metadata map: file SHA256,
+UID/GID/mode/mtime/device/inode, and an individually frozen ancestor directory
+UID/GID/mode/device/inode map. Existing symlinks additionally pin link target and
+inode/timestamps. All other paths retain the root trust gate. Included paths,
+links, owners and hashes are checked before modification/signals and completion.
+The transaction writes only its stage, new module and root-owned loadconf; it has
+no write/restore/chmod/chown path for `asn.conf` or any preserved existing config.
 
 The input JSON must be a root-owned private file. It supplies exact existing
 paths (`binary`, `config`, `prefix`, `pid`, `load`, `old_module`, `status`,
@@ -121,13 +155,19 @@ creates only a UUID-scoped separate unit, private executable artifacts and a
 The rollback case injects a deadline failure after WINCH. Neither test result
 is presently claimed as passing.
 
-Completed local suite: **234 tests, OK, 3 skipped** (14 transaction tests).
-RED failures were observed for policy, orchestration, config/file primitives,
-pidfd gate, mapping inode gate and interrupted rollback. Later additional
-orchestration cases are regression coverage, not claimed independent REDs.
+Completed local suite for this revision: **250 tests, OK, 3 skipped**
+(**30 transaction tests**, including a matrix of before/after interruption windows).
+Feature REDs preceded readonly policy, parent-chain preservation, source gates,
+absolute deadline implementation and ambiguous/resumed rollback fixes. Existing
+behavior matrix cases are regression coverage, not separately claimed REDs.
+Generated HTML/runtime freshness also passed. Browser results are reported by CI,
+not inferred from the Python suite. Independent review is still pending.
 
-Official mechanism context previously verified by the parent: nginx control
-`UPGRADING_EXECUTABLE` and `ngx_http_v3_module` / `quic_bpf`. Previous exact
+Official nginx `control.html` upgrading section was retrieved and read by the
+parent using **curl**, saved as `nginx-control-parent.html` in the parent scratch
+directory. No `web.run` retrieval is claimed. It confirms USR2/WINCH, old-HUP
+worker revival without config reread, graceful new QUIT, and old QUIT commit.
+Previous exact
 artifact tests proved USR2/WINCH, old-HUP-before-new-QUIT rollback, full slow
 responses and automatic systemd PIDFile adoption on both hosts. Those receipts
 remain historical mechanism evidence, not validation of this draft installer.

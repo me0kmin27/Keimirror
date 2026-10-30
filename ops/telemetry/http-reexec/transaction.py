@@ -109,7 +109,55 @@ def trusted(path, private=False):
     return p
 
 
-def config_inventory(config):
+def identity_snapshot(path):
+    """Freeze immutable identity as well as restorable metadata; never follow leaf links."""
+    p = Path(path)
+    before = p.lstat()
+    value = snapshot(p)
+    after = p.lstat()
+    fields = ('st_dev', 'st_ino', 'st_uid', 'st_gid', 'st_mode', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
+    if any(getattr(before, k) != getattr(after, k) for k in fields):
+        raise ValueError('configuration changed during snapshot')
+    return dict(value, dev=after.st_dev, ino=after.st_ino)
+
+
+def readonly_parents(path, frozen):
+    """Pin an existing config's ancestor authority, never an installer write path."""
+    p = Path(path)
+    if 'parents' not in frozen:
+        trusted(p.parent)
+        return
+    if not p.is_absolute() or set(frozen['parents']) != {str(a) for a in p.parents}:
+        raise ValueError('exact readonly parent chain required')
+    for a in p.parents:
+        s = a.lstat()
+        actual = dict(uid=s.st_uid, gid=s.st_gid, mode=stat.S_IMODE(s.st_mode),
+                      dev=s.st_dev, ino=s.st_ino)
+        if not stat.S_ISDIR(s.st_mode) or s.st_mode & 0o002 or actual != frozen['parents'][str(a)]:
+            raise ValueError('readonly directory identity/owner/mode drift')
+
+
+def readonly_config(path, allowlist):
+    """A narrow existing-config exception, NEVER usable for a write/execution input.
+
+    Parent directories are root controlled or individually pinned in the same
+    approved readonly policy. Existing operator authority is preserved, not granted: exact path, bytes, owner, permissions and inode must
+    match the separately approved inventory. No chmod/chown/write is performed.
+    """
+    p = Path(path)
+    if str(p) not in allowlist:
+        trusted(p)
+        return identity_snapshot(p)
+    expected = allowlist[str(p)]
+    readonly_parents(p, expected)
+    actual = identity_snapshot(p)
+    readonly_parents(p, expected)
+    if actual['mode'] & 0o002 or actual != {k: v for k, v in expected.items() if k != 'parents'}:
+        raise ValueError('readonly configuration identity/owner/hash drift')
+    return actual
+
+
+def config_inventory(config, allowlist=None, links=None):
     """Read includes only; never nginx -T (it can open application log files).
 
     Unsupported QUIC is rejected even with quic_bpf on: this transaction does
@@ -119,7 +167,28 @@ def config_inventory(config):
     files, directives = {}, []
     base = Path(config).parent
     def visit(path):
-        path = Path(path).resolve(strict=True)
+        lexical = Path(path)
+        if links is not None:
+            for part in [*reversed(lexical.parents), lexical]:
+                s = part.lstat()
+                if stat.S_ISLNK(s.st_mode):
+                    link = dict(target=os.readlink(part), dev=s.st_dev,
+                                ino=s.st_ino, uid=s.st_uid, gid=s.st_gid,
+                                mtime_ns=s.st_mtime_ns, ctime_ns=s.st_ctime_ns)
+                    if allowlist is not None:
+                        if str(part) in allowlist:
+                            expected = allowlist[str(part)]
+                            readonly_parents(part, expected)
+                            if link != {k: v for k, v in expected.items() if k != 'parents'}:
+                                raise ValueError('readonly symlink identity drift')
+                        else:
+                            trusted(part.parent)
+                            if s.st_uid or s.st_gid:
+                                raise ValueError('non-root configuration link')
+                    links[str(part)] = link
+        path = lexical.resolve(strict=True)
+        if allowlist is not None:
+            readonly_config(path, allowlist)
         if str(path) in files:
             return
         if len(files) >= 256:
@@ -157,6 +226,52 @@ def config_inventory(config):
 BUDGETS = dict(copy=30, syntax=15, workers=60, acceptance=30, drain=120, adoption=15)
 TOTAL = 270
 RECOVERY = 180
+# Absolute monotonic deadlines survive same-boot resume. Recovery cannot extend
+# the hard ceiling, nor can unused forward time enlarge its own budget.
+ACTIVE_DEADLINE = None
+
+
+def deadline_expired(signum, frame):
+    raise TimeoutError('executor deadline expired; nginx clients are retained')
+
+
+class Deadlines:
+    def __init__(self, journal, save):
+        self.journal, self.save = journal, save
+        if 'budget' not in journal:
+            now = time.monotonic()
+            journal['budget'] = dict(start=now, forward_end=now + TOTAL,
+                                     hard_end=now + TOTAL + RECOVERY)
+            save(journal)
+        self.budget = dict(journal['budget'])
+        self.hard_end = self.budget['hard_end']
+        self.deadline = self.budget.get('recovery_end', self.budget['forward_end'] if journal.get('phase', 'prepared') == 'prepared' else self.hard_end)
+        signal.signal(signal.SIGALRM, deadline_expired)
+        self.arm()
+
+    def arm(self):
+        global ACTIVE_DEADLINE
+        ACTIVE_DEADLINE = self.deadline
+        signal.setitimer(signal.ITIMER_REAL, self.remaining())
+
+    def phase(self, name):
+        if name == 'recovery':
+            if 'recovery_end' not in self.budget:
+                self.budget['recovery_end'] = min(self.hard_end, time.monotonic() + RECOVERY)
+                self.journal['budget'] = dict(self.budget)
+                self.save(self.journal)
+            self.deadline = self.budget['recovery_end']
+        else:
+            if 'recovery_end' in self.budget:
+                raise ValueError('recovery has priority; forward execution cannot resume')
+            self.deadline = min(self.budget['forward_end'], time.monotonic() + BUDGETS[name])
+        self.arm()
+
+    def remaining(self):
+        left = min(self.deadline, self.hard_end) - time.monotonic()
+        if left <= 0:
+            raise TimeoutError('absolute deadline; clients are retained, never killed')
+        return left
 
 
 def process(pid):
@@ -243,20 +358,27 @@ class Transaction:
 
     def rollback(self):
         if self.j['phase'] in ('commit-intent', 'committed'):
-            raise ValueError('old generation commit is irreversible; reconcile, do not signal old')
+            raise ValueError('old generation commit is irreversible; reconcile only. A legacy-module switch requires a separately reviewed new upgrade, never HUP of the retired master')
         if self.j['phase'] == 'rolled-back':
             return
         signaled = self.j['phase'] not in ('prepared', 'install-intent', 'restore-files-intent')
+        resumed_quit = self.j['phase'] == 'new-quit-intent'
         self.b.phase('recovery')
         if signaled and self.j['new'] is None:
             self.j['new'] = self.b.discover_optional()
-        self.mark('restore-intent' if signaled else 'restore-files-intent')
+            if self.j['new'] is None:
+                raise ValueError('ambiguous USR2 intent without published new master; preserve generations for reconciliation')
+        if not resumed_quit:
+            self.mark('restore-intent' if signaled else 'restore-files-intent')
         self.b.restore()
         self.b.syntax()
         if signaled:
-            self.b.signal(self.j['old'], 'HUP')
+            if not resumed_quit:
+                self.mark('old-hup-intent')
+                self.b.signal(self.j['old'], 'HUP')
             self.b.ready(self.j['old'])
             if self.j['new'] is not None:
+                self.mark('new-quit-intent')
                 self.b.signal(self.j['new'], 'QUIT')
                 self.b.drain(self.j['new'])
             self.b.adopted(self.j['old'])
@@ -265,6 +387,10 @@ class Transaction:
 
 
 def command(argv, timeout=10, data=None):
+    if ACTIVE_DEADLINE is not None:
+        timeout = min(timeout, ACTIVE_DEADLINE - time.monotonic())
+        if timeout <= 0:
+            raise TimeoutError('command absolute deadline')
     return subprocess.run(argv, input=data, stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE, check=True, timeout=timeout,
                           env={'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LC_ALL': 'C'}).stdout
@@ -382,11 +508,12 @@ def probe(spec, timeout=10):
 def prepare(spec, stage):
     if os.geteuid() != 0:
         raise PermissionError('root required')
+    trusted(Path(__file__).absolute())
     stage = Path(stage)
     trusted(stage.parent, private=True)
     if spec['hostname'] != os.uname().nodename or type(spec['workers']) is not int or not 1 <= spec['workers'] <= 1024:
         raise ValueError('host/worker binding mismatch')
-    for key in ('binary', 'config', 'load', 'old_module', 'package'):
+    for key in ('binary', 'load', 'old_module', 'package'):
         trusted(spec[key])
     for key in ('new_module', 'pid', 'status'):
         if not re.fullmatch(r'/[A-Za-z0-9_./-]+', spec[key]):
@@ -401,11 +528,16 @@ def prepare(spec, stage):
     if digest(original) != spec['load_sha256'] or original.strip() != ('load_module ' + spec['old_module'] + ';').encode():
         raise ValueError('sole reviewed absolute load directive required')
     target = ('load_module ' + spec['new_module'] + ';\n').encode()
-    files = config_inventory(spec['config'])
+    allowlist = spec.get('readonly_configs', {})
+    if any(p in allowlist for p in (spec['load'], spec['binary'], spec['old_module'], spec['new_module'], spec['package'])):
+        raise ValueError('readonly exception cannot authorize execution or mutation inputs')
+    links = {}
+    files = config_inventory(spec['config'], allowlist, links)
+    if not set(allowlist) <= set(files) | set(links):
+        raise ValueError('readonly exception must name an included existing config')
     if spec['load'] not in files:
         raise ValueError('load configuration not included')
-    for path in files:
-        trusted(path)
+    preserved = {path: readonly_config(path, allowlist) for path in files if path != spec['load']}
     # Reject a second project module load anywhere, not merely in this fragment.
     loads = re.findall(rb'\bload_module\s+([^;]+);', b'\n'.join(read(p) for p in files))
     if [x for x in loads if b'project_live' in x or x == spec['old_module'].encode()] != [spec['old_module'].encode()]:
@@ -444,7 +576,8 @@ def prepare(spec, stage):
     if digest(module) != NEW:
         raise ValueError('reviewed package payload mismatch')
     timers = {name: command(['systemctl', 'is-active', name]).decode().strip() for name in spec['timers']}
-    manifest = dict(version=1, spec=spec, machine=machine(), old=old, workers=workers,
+    manifest = dict(version=2, spec=spec, machine=machine(), old=old, workers=workers,
+                    preserved_configs=preserved, config_links=links,
                     listeners=listeners(old['identity'][0]), files=files, reader_files=readers,
                     unit=state, unit_text=digest(command(['systemctl', 'cat', spec['unit']])),
                     packages=packages(), timers=timers, initial=initial,
@@ -467,6 +600,7 @@ class Linux:
     def __init__(self, stage, approved):
         if os.geteuid() != 0:
             raise PermissionError('root required')
+        trusted(Path(__file__).absolute())
         self.stage = trusted(stage, private=True)
         raw = read(trusted(self.stage / 'manifest.json', private=True))
         if digest(raw) != approved:
@@ -478,28 +612,25 @@ class Linux:
         self.j = json.loads(read(trusted(self.stage / 'journal.json', private=True)))
         if self.j['manifest_sha256'] != approved or self.j['old'] != self.m['old']['identity']:
             raise ValueError('journal binding mismatch')
-        self.end = time.monotonic() + TOTAL
-        self.deadline = self.end
+        self.clock = Deadlines(self.j, self.save)
         self.old = self.j['old']
         self.verify_backups()
 
     def save(self, journal):
+        # Transaction phase snapshots must not overwrite newly reserved recovery.
+        budget = dict(self.clock.budget) if hasattr(self, 'clock') else journal.get('budget')
         self.j = dict(journal)
+        if budget is not None:
+            self.j['budget'] = budget
         atomic(self.stage / 'journal.json', encoded(self.j))
+        if hasattr(self, 'clock'):
+            self.clock.journal = self.j
 
     def phase(self, name):
-        if name == 'recovery':
-            self.end = time.monotonic() + RECOVERY
-            self.deadline = self.end
-        else:
-            self.deadline = min(self.end, time.monotonic() + BUDGETS[name])
-        self.remaining()
+        self.clock.phase(name)
 
     def remaining(self):
-        left = self.deadline - time.monotonic()
-        if left <= 0:
-            raise TimeoutError('phase deadline; clients are retained, never killed')
-        return left
+        return self.clock.remaining()
 
     def wait(self, predicate):
         while True:
@@ -522,7 +653,23 @@ class Linux:
         if digest(read(trusted(self.s['old_module']))) != OLD:
             raise ValueError('retained old mapped module changed')
 
+    def verify_configs(self):
+        links = {}
+        current = config_inventory(self.s['config'], self.s.get('readonly_configs', {}), links)
+        if set(current) != set(self.m['files']) or links != self.m['config_links']:
+            raise ValueError('configuration include/link drift')
+        for path, expected in self.m['preserved_configs'].items():
+            if readonly_config(path, self.s.get('readonly_configs', {})) != expected:
+                raise ValueError('preserved readonly configuration drift')
+        # The sole writable config never inherits the readonly ownership exception.
+        current_load = snapshot(trusted(self.s['load']))
+        original_load = self.m['files'][self.s['load']]
+        if (current_load['sha256'] not in (self.m['original'], self.m['target']) or
+                any(current_load[k] != original_load[k] for k in ('uid', 'gid', 'mode', 'mtime_ns'))):
+            raise ValueError('loadconf drift outside transaction')
+
     def preflight(self):
+        self.verify_configs()
         self.verify_backups()
         if config_inventory(self.s['config']) != self.m['files'] or process(self.old[0]) != self.m['old'] or children(self.old) != self.m['workers'] or listeners(self.old[0]) != self.m['listeners']:
             raise ValueError('fresh host preflight drift')
@@ -537,6 +684,7 @@ class Linux:
             raise ValueError('existing candidate or re-exec')
 
     def install(self):
+        self.verify_configs()
         self.remaining()
         original_meta = self.m['files'][self.s['load']]
         if snapshot(trusted(self.s['load'])) != original_meta:
@@ -548,9 +696,11 @@ class Linux:
         self.remaining()
 
     def syntax(self):
+        self.verify_configs()
         command([self.s['binary'], '-p', self.s['prefix'], '-c', self.s['config'], '-t'], min(15, self.remaining()))
 
     def signal(self, who, name):
+        self.verify_configs()
         self.remaining()
         try:
             p = process(who[0])
@@ -649,6 +799,7 @@ class Linux:
             self.wait(lambda: not Path(f'/proc/{self.old[0]}').exists())
 
     def restore(self):
+        self.verify_configs()
         self.verify_backups()
         original = self.m['files'][self.s['load']]
         current = snapshot(trusted(self.s['load']))
@@ -660,6 +811,7 @@ class Linux:
         # Never remove candidate: a draining process can still map it.
 
     def finish(self):
+        self.verify_configs()
         if packages() != self.m['packages']:
             raise ValueError('package inventory changed')
         for name, expected in self.m['timers'].items():
@@ -707,6 +859,7 @@ def main(argv=None):
             b.phase('adoption'); b.adopted(tx.j['new']); b.finish(); tx.mark('committed')
         print(json.dumps(tx.j))
     finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
         os.close(fd)
 
 

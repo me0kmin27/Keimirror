@@ -1,0 +1,1213 @@
+{
+  "ready_to_apply": false,
+  "deployment_authorized": false,
+  "policy": "Exact existing readonly files and symlinks, including frozen ancestor UID/GID/mode/device/inode. No installer writes permitted to any of these paths. New execution, stage and sole loadconf inputs keep strict root-controlled policy.",
+  "hosts": {
+    "19": {
+      "hostname": "mirror",
+      "readonly_configs": {},
+      "inventory_sha256": "76be8f641cbec99659b6bc0c15b9ad20056bc4562157ab92d812c75f060622fe"
+    },
+    "20": {
+      "hostname": "mirror2",
+      "readonly_configs": {
+        "/etc/nginx/conf.d/asn.conf": {
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1438984,
+          "mode": 420,
+          "mtime_ns": 1790522696290923320,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/conf.d": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1438983,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "sha256": "95ab51cd48e083193206d4251f8baa9a6a846dd708c295250cae41bfdbad979d",
+          "uid": 1000
+        },
+        "/etc/nginx/conf.d/ipban.conf": {
+          "dev": 2049,
+          "gid": 0,
+          "ino": 1438985,
+          "mode": 420,
+          "mtime_ns": 1792865046447694043,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/conf.d": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1438983,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "sha256": "6c7c8411a99df293357d118234148c650ec5b5a366d747e7801ac2cf555b81a9",
+          "uid": 0
+        },
+        "/etc/nginx/conf.d/keimirror-live.conf": {
+          "dev": 2049,
+          "gid": 0,
+          "ino": 1439099,
+          "mode": 420,
+          "mtime_ns": 1793334011390261795,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/conf.d": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1438983,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "sha256": "9805b5ac83b1cb3cde88661c02b2ebf657395ca6880427d87cf80bd9c088037a",
+          "uid": 0
+        },
+        "/etc/nginx/conf.d/keimirror-telemetry.conf": {
+          "dev": 2049,
+          "gid": 0,
+          "ino": 1439319,
+          "mode": 420,
+          "mtime_ns": 1793177526714219238,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/conf.d": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1438983,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "sha256": "6dd01ae609fc620ac301b49be0c232da7142d534a966436133ff91f9707a7b84",
+          "uid": 0
+        },
+        "/etc/nginx/mime.types": {
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1438995,
+          "mode": 420,
+          "mtime_ns": 1756476613000000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "sha256": "b12cd90b120d4b97e76a7b857eb4a2bf0b6df37c4b246d471f37e6493dc191ac",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/90-keimirror-live.conf": {
+          "dev": 2049,
+          "gid": 0,
+          "ino": 1047884,
+          "mode": 420,
+          "mtime_ns": 1793334011382261828,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "sha256": "f5e5e2f2d7f1d201d313879ee9b31c47c01f69c97174e04e0f96423b339da748",
+          "uid": 0
+        },
+        "/etc/nginx/nginx.conf": {
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1439019,
+          "mode": 420,
+          "mtime_ns": 1790523624832862754,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "sha256": "16dd81827a6adee553161926ad4b3d6703fb4e604c39c30d736736d83136d705",
+          "uid": 1000
+        },
+        "/etc/nginx/sites-available/theme": {
+          "dev": 2049,
+          "gid": 0,
+          "ino": 1047882,
+          "mode": 420,
+          "mtime_ns": 1793177526722219207,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/sites-available": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047312,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "sha256": "e331ebd70a32bb7a4e717b94c7a43bbb08ce4bb64aadc332ada8c3f3f4fe381e",
+          "uid": 0
+        },
+        "/etc/nginx/snippets/keimirror-telemetry-location.conf": {
+          "dev": 2049,
+          "gid": 0,
+          "ino": 1047881,
+          "mode": 420,
+          "mtime_ns": 1793334011374261860,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/snippets": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047315,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "sha256": "f7bb6b2c5a528fdeb9a6b8e03258c99cc703338726cb87c23428b890b305bd59",
+          "uid": 0
+        },
+        "/etc/nginx/modules-enabled/10-mod-http-ndk.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047397,
+          "mtime_ns": 1763302817052000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-ndk.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-auth-pam.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047394,
+          "mtime_ns": 1763302816844000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-auth-pam.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-cache-purge.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047398,
+          "mtime_ns": 1763302817240000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-cache-purge.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-dav-ext.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047386,
+          "mtime_ns": 1763302815764000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-dav-ext.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-echo.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047399,
+          "mtime_ns": 1763302817444000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-echo.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-fancyindex.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047388,
+          "mtime_ns": 1763302815972000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-fancyindex.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-geoip.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047395,
+          "mtime_ns": 1763302816900000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-geoip.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-geoip2.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047401,
+          "mtime_ns": 1763302817804000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-geoip2.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-headers-more-filter.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047389,
+          "mtime_ns": 1763302816232000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-headers-more-filter.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-image-filter.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047408,
+          "mtime_ns": 1763302819048000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-image-filter.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-lua.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047407,
+          "mtime_ns": 1763302818828000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-lua.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-perl.conf": {
+          "ctime_ns": 1763303050016000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047406,
+          "mtime_ns": 1763302818560000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-perl.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-subs-filter.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047400,
+          "mtime_ns": 1763302817492000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-subs-filter.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-uploadprogress.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047393,
+          "mtime_ns": 1763302816748000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-uploadprogress.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-upstream-fair.conf": {
+          "ctime_ns": 1763303050016000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047391,
+          "mtime_ns": 1763302816388000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-upstream-fair.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-http-xslt-filter.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047405,
+          "mtime_ns": 1763302818440000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-http-xslt-filter.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-mail.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047387,
+          "mtime_ns": 1763302815876000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-mail.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-nchan.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047396,
+          "mtime_ns": 1763302816996000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-nchan.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/50-mod-stream.conf": {
+          "ctime_ns": 1763303050016000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047390,
+          "mtime_ns": 1763302816332000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-stream.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/70-mod-stream-geoip.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047392,
+          "mtime_ns": 1763302816564000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-stream-geoip.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/modules-enabled/70-mod-stream-geoip2.conf": {
+          "ctime_ns": 1763303050020000000,
+          "dev": 2049,
+          "gid": 1000,
+          "ino": 1047402,
+          "mtime_ns": 1763302817988000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/modules-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047308,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/usr/share/nginx/modules-available/mod-stream-geoip2.conf",
+          "uid": 1000
+        },
+        "/etc/nginx/sites-enabled/theme": {
+          "ctime_ns": 1774077803564000000,
+          "dev": 2049,
+          "gid": 0,
+          "ino": 1047304,
+          "mtime_ns": 1774077803564000000,
+          "parents": {
+            "/": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 2,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc": {
+              "dev": 2049,
+              "gid": 0,
+              "ino": 1046529,
+              "mode": 493,
+              "uid": 0
+            },
+            "/etc/nginx": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047300,
+              "mode": 493,
+              "uid": 1000
+            },
+            "/etc/nginx/sites-enabled": {
+              "dev": 2049,
+              "gid": 1000,
+              "ino": 1047314,
+              "mode": 493,
+              "uid": 1000
+            }
+          },
+          "target": "/etc/nginx/sites-available/theme",
+          "uid": 0
+        }
+      },
+      "inventory_sha256": "02d9d5584741b154be8075a3c28d75d31d25c9a792f294729f9c8cdc165652ec"
+    }
+  }
+}

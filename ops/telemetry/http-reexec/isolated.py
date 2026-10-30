@@ -19,6 +19,8 @@ import transaction as t
 
 def run(artifacts, output, case):
     assert os.geteuid() == 0
+    t.trusted(Path(__file__).absolute())
+    t.trusted(Path(t.__file__).absolute())
     assert hasattr(t, 'prepare'), 'root preparation missing'
     root = Path('/var/lib/keimirror-reexec-test-' + uuid.uuid4().hex[:10])
     root.mkdir(mode=0o755)
@@ -99,6 +101,8 @@ server {{ listen unix:{runtime}/status.sock; project_live off; location = / {{ p
         assert payload == b'x' * 131072
         result.update(passed=True, body_bytes=len(payload), response_bytes=len(body), phase=tx.j['phase'], manifest_sha256=manifest_sha, journal=tx.j)
     finally:
+        t.signal.setitimer(t.signal.ITIMER_REAL, 0)
+        t.ACTIVE_DEADLINE = None
         if client: client.close()
         result['unit'] = subprocess.run(['systemctl', 'show', unit, '-p', 'MainPID', '-p', 'ActiveState', '-p', 'Result'], capture_output=True, text=True).stdout
         if (root / 'error.log').exists(): result['nginx_log'] = (root / 'error.log').read_text()

@@ -3,8 +3,128 @@
   "ready_to_apply": false,
   "inspection_kind": "read-only; no nginx -T or production signals",
   "hosts": {
-    "19": {"hostname": "mirror", "expected_workers": 32, "quic_listeners": false, "worker_shutdown_timeout_directives": []},
-    "20": {"hostname": "mirror2", "expected_workers": 44, "quic_listeners": false, "worker_shutdown_timeout_directives": []}
+    "19": {
+      "hostname": "mirror",
+      "expected_workers": 32,
+      "quic_listeners": false,
+      "worker_shutdown_timeout_directives": [],
+      "timers": {
+        "keimirror-status-collector.timer": "ActiveState=active\nUnitFileState=enabled\n",
+        "keimirror-status-sizes.timer": "ActiveState=active\nUnitFileState=enabled\n"
+      },
+      "retained_backups": {
+        "/var/backups/keimirror-telemetry/before-fulltraffic-df2ca01/original.tar.gz": "2bd34c26bdf574e3c1449c836aed1c127de06d6e1a6841228ce1b51d087c12e5"
+      },
+      "download_source": {
+        "document_root": "/srv/mirrors",
+        "relative_url": "/archlinux/lastupdate",
+        "sha256": "cf3447be83d6d60753b000ba43f3d28c8fac07f64bacb41f58a30b962935d759",
+        "size": 11,
+        "source_metadata": {
+          "dev": 2050,
+          "gid": 1000,
+          "ino": 53251513,
+          "mode": 436,
+          "mtime_ns": 1793358619901851522,
+          "sha256": "cf3447be83d6d60753b000ba43f3d28c8fac07f64bacb41f58a30b962935d759",
+          "uid": 1000
+        },
+        "source_path": "/srv/mirrors/archlinux/lastupdate"
+      },
+      "http_probes": [
+        {
+          "url": "http://mirror.keiminem.com/archlinux/lastupdate",
+          "code": 200,
+          "size": 11,
+          "sha256": "cf3447be83d6d60753b000ba43f3d28c8fac07f64bacb41f58a30b962935d759"
+        },
+        {
+          "url": "http://127.0.0.1/archlinux/lastupdate",
+          "code": 200,
+          "size": 11,
+          "sha256": "cf3447be83d6d60753b000ba43f3d28c8fac07f64bacb41f58a30b962935d759"
+        }
+      ],
+      "https_probe": {
+        "url": "https://mirror.keiminem.com/archlinux/lastupdate",
+        "returncode": 60,
+        "code": "000",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "readonly_policy_file": "host-readonly-configs.json",
+      "readonly_exception_count": 0,
+      "error_url": "http://mirror.keiminem.com/archlinux/.keimirror-reexec-probe-",
+      "error_probe": {
+        "hostname": "mirror",
+        "error_url": "http://mirror.keiminem.com/archlinux/.keimirror-reexec-probe-",
+        "returncode": 0,
+        "code": "404",
+        "source_root": "/srv/mirrors",
+        "source_missing": true
+      }
+    },
+    "20": {
+      "hostname": "mirror2",
+      "expected_workers": 44,
+      "quic_listeners": false,
+      "worker_shutdown_timeout_directives": [],
+      "timers": {
+        "keimirror-status-collector.timer": "ActiveState=active\nUnitFileState=enabled\n",
+        "keimirror-status-sizes.timer": "ActiveState=active\nUnitFileState=enabled\n"
+      },
+      "retained_backups": {
+        "/var/backups/keimirror-telemetry/before-fulltraffic-df2ca01/original.tar.gz": "16eb0fe3a4487d07d4eb031f22500bc41f1bb7b17348b79ca9e8896df27feccb"
+      },
+      "download_source": {
+        "document_root": "/srv/mirrors",
+        "relative_url": "/archlinux/lastupdate",
+        "sha256": "cf3447be83d6d60753b000ba43f3d28c8fac07f64bacb41f58a30b962935d759",
+        "size": 11,
+        "source_metadata": {
+          "dev": 2065,
+          "gid": 1000,
+          "ino": 216818236,
+          "mode": 436,
+          "mtime_ns": 1793358619901851522,
+          "sha256": "cf3447be83d6d60753b000ba43f3d28c8fac07f64bacb41f58a30b962935d759",
+          "uid": 1000
+        },
+        "source_path": "/srv/mirrors/archlinux/lastupdate"
+      },
+      "http_probes": [
+        {
+          "url": "http://mirror2.keiminem.com/archlinux/lastupdate",
+          "code": 200,
+          "size": 11,
+          "sha256": "cf3447be83d6d60753b000ba43f3d28c8fac07f64bacb41f58a30b962935d759"
+        },
+        {
+          "url": "http://127.0.0.1/archlinux/lastupdate",
+          "code": 200,
+          "size": 11,
+          "sha256": "cf3447be83d6d60753b000ba43f3d28c8fac07f64bacb41f58a30b962935d759"
+        }
+      ],
+      "https_probe": {
+        "url": "https://mirror2.keiminem.com/archlinux/lastupdate",
+        "returncode": 7,
+        "code": "000",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "readonly_policy_file": "host-readonly-configs.json",
+      "readonly_exception_count": 31,
+      "error_url": "http://mirror2.keiminem.com/archlinux/.keimirror-reexec-probe-",
+      "error_probe": {
+        "hostname": "mirror2",
+        "error_url": "http://mirror2.keiminem.com/archlinux/.keimirror-reexec-probe-",
+        "returncode": 0,
+        "code": "404",
+        "source_root": "/srv/mirrors",
+        "source_missing": true
+      }
+    }
   },
   "known_paths": {
     "binary": "/usr/sbin/nginx",
@@ -20,6 +140,12 @@
   },
   "known_load_sha256": "01e7bca23eb296b96d20ccfb23b0bd82cd7cdd3d59ef1f8ce91d5b3cfcfbb46c",
   "fresh_preflight_required": true,
-  "retained_backup_gate": "UNBOUND: require fresh host-specific existing backup verification; never substitute the other host's inventory",
-  "remaining_inputs": ["reviewed package private executable-filesystem staging path", "fresh retained backup path/digest binding", "bounded real-project download URL, byte count and SHA256", "unique project 404 URL prefix", "current timer inventory", "review of existing configuration ownership policy"]
+  "retained_backup_gate": "Fresh hash verified existing root-owned 0600 original archive on each host; private current old.so is separately saved by prep. Archives have distinct host-specific hashes.",
+  "remaining_inputs": [
+    "root-owned reviewed installer and package staging on executable filesystem",
+    "fresh private manifest and readonly-policy review before apply",
+    "privileged isolated full failure/long-client/interruption runtime gates pending tool approval",
+    "independent review and explicit release authorization"
+  ],
+  "inventory_observed_at_utc": "2026-10-30T11:59:33.128603+00:00"
 }

@@ -1,7 +1,7 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "deployment_authorized": false,
-  "runtime_validation": "BLOCKED: isolated transaction command requires tool approval",
+  "runtime_validation": "PENDING ORIGINAL TOOL APPROVAL: no privileged transaction command submitted or retried in this continuation; no GREEN runtime claim. Exact original command is held by the parent approval record and was not supplied to this subagent.",
   "base_commit": "85fc9c12a25a3c2d1fadb691b4082c55a7744cb6",
   "reviewed_http_source_commit": "345717faaf50fa82ab8adcab0c4f84ebdcdeeaed",
   "nginx_sha256": "3f804ae7dda33a8368993d5d6087bfbc5fbf8c8ed1760af12fc9e8a74966d8a7",
@@ -10,15 +10,27 @@
   "reviewed_package_sha256": "a057348974aa3ab2ae5297e02ddaac7b882d4c4534c285e2d6f649e69ca6ea4e",
   "package_action": "No installation; extract exact module into a versioned manual path; retain installed package metadata",
   "support_files": {
-    "ops/telemetry/http-reexec/README.md": "87801ca453268318ef49d6a4200053b7a96c2f21c6d756909f0e4c110c1d7585",
-    "ops/telemetry/http-reexec/host-baselines.json": "365fe8811429bb5cc1c86119d26dc9a673c8be5c2c91a8f200bff94341818f68",
+    "ops/telemetry/http-reexec/README.md": "aa2c36948b7c656d588b64bcd2f61fde7599be25af7f00303723407009b994ee",
+    "ops/telemetry/http-reexec/host-baselines.json": "23b8f68a022f5378d0a6c6be02b1500390182d34509b75e93bb2ce737d7efd71",
     "telemetry/http_rates.py": "9b85d1cf82abec9124834c71139f9b8b514bed29dddf4c21bd26b213c1523386",
     "telemetry/private_reasons.py": "0b99330982235456c72fb45f9c46d81c08f640e673e50eece5aa72081647675b"
   },
   "files": {
-    "ops/telemetry/http-reexec/transaction.py": "39e5ce63de9e7a1231c53d3cc32437cc0ff12847fe63e59efeefcedfd2ae628f",
-    "ops/telemetry/http-reexec/isolated.py": "76a8f0d2417c87faadb14a6fab75d3b385ea41c163fac7f0cbbfe254a1631c6c",
+    "ops/telemetry/http-reexec/transaction.py": "007c171e31d97fcf18921fd58b5a3ade6bb3954d2d986478c5378ca025aeb721",
+    "ops/telemetry/http-reexec/isolated.py": "2b5ad5d55992e2834e5806d374effc0acfd791839b999da3e80374897bf65cf5",
     "ops/telemetry/http-reexec/project-live.versioned.conf": "d9813d64c9df38232f1ed7528d90d8b9aa2acb089c62c5a08093ecc964fdbfd7",
-    "tests/test_http_reexec.py": "c466d1d42ebd2d48f066de99eb4c150afc715fd02be004bc39db5c41bbdf67c2"
+    "tests/test_http_reexec.py": "ca2c263edb21cf4d31a02309e3761e5081de6cc938c0674a6c52f151a251a725",
+    "ops/telemetry/http-reexec/inventory.py": "8319ceac5800ce89340f8e1a0463753c74907ecedf7829dc6459ee7a3cb08e61",
+    "ops/telemetry/http-reexec/host-readonly-configs.json": "349f9be9512c89efbb21808a3b6cc895c0607cb9a34416a2486e8c2aadf6f539"
+  },
+  "independent_review": "PENDING; no merge or deployment authorized",
+  "private_inventory_hashes": {
+    "frozen-inventory-19.json": "76be8f641cbec99659b6bc0c15b9ad20056bc4562157ab92d812c75f060622fe",
+    "frozen-inventory-20.json": "02d9d5584741b154be8075a3c28d75d31d25c9a792f294729f9c8cdc165652ec"
+  },
+  "official_mechanism_provenance": {
+    "retrieval": "parent curl (not web.run), upgrading section read by parent",
+    "saved_file": "/home/me0kmin27/.hermes/cache/scratch/nginx-control-parent.html",
+    "sha256": "3ca2222fdd19d49b1f4c48dcd73edb237bb5b4c63193c3cc71fd5354b8a04dfd"
   }
 }
