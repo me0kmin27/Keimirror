@@ -10,8 +10,10 @@ exec {__keimirror_fd}< <(
     fi
 )
 set -- --original-environment-fd "$__keimirror_fd" --snapshot-pid "$!" --inherited-sigign "$(
+    # Snapshot once: read seeks backwards between lines, regenerating live
+    # proc status. A changing State field can shift SigIgn out from under it.
     while read -r key value; do
         case "$key" in SigIgn:) printf '%s' "$value"; break ;; esac
-    done < /proc/$$/status
+    done <<< "$(< /proc/$$/status)"
 )" -- "$@"
 exec /usr/bin/python3 -B /opt/keimirror-telemetry/observe.py --config /etc/keimirror-telemetry/config.json --state-dir /var/lib/keimirror-telemetry --program /usr/bin/rsync "$@"
