@@ -1,7 +1,8 @@
 """Opt-in root integration. Only task-owned systemd units/files, no production signals.
 
 Arguments: evidence directory containing nginx, old.so, candidate.deb and reader/
-(http_rates.py, private_reasons.py). Artifacts are checked by transaction.prepare.
+(http_rates.py, private_reasons.py). Run through the reviewed root_stage entry.
+Artifacts are captured and verified before transaction import or any command.
 """
 import argparse
 import hashlib
@@ -14,26 +15,41 @@ import subprocess
 import sys
 import time
 import uuid
-import transaction as t
+import stat
+
+# A direct root invocation from an operator checkout must reject before even
+# importing its sibling verifier. Approved entry is root_stage's verified closure.
+if os.geteuid() == 0:
+    for source in (Path(__file__).absolute(), Path(__file__).absolute().with_name('root_stage.py')):
+        for part in [*reversed(source.parents), source]:
+            metadata = part.lstat()
+            if metadata.st_uid or metadata.st_gid or metadata.st_mode & 0o022 or stat.S_ISLNK(metadata.st_mode):
+                raise PermissionError('root-controlled source required before import')
+
+import root_stage as provenance
 
 
 def run(artifacts, output, case):
     assert os.geteuid() == 0
-    t.trusted(Path(__file__).absolute())
-    t.trusted(Path(t.__file__).absolute())
-    assert hasattr(t, 'prepare'), 'root preparation missing'
+    provenance.trusted(Path(__file__).absolute())
+    provenance.trusted(Path(provenance.__file__).absolute())
     root = Path('/var/lib/keimirror-reexec-test-' + uuid.uuid4().hex[:10])
+    provenance.trusted(root.parent)
     root.mkdir(mode=0o755)
+    provenance.trusted(root)
     unit = root.name + '.service'
     runtime = Path('/run') / root.name
     client = None
     result = {'case': case, 'passed': False}
+    launched = False
+    t = None
     try:
-        private = root / 'private'; private.mkdir(mode=0o700)
-        for name in ('nginx', 'old.so', 'candidate.deb'):
-            shutil.copyfile(artifacts / name, private / name)
-            (private / name).chmod(0o755 if name == 'nginx' else 0o600)
-        shutil.copytree(artifacts / 'reader', private / 'reader')
+        private = provenance.stage_artifacts(artifacts, root / 'private')
+        # Load captured source, never an existing sys.modules entry or pyc.
+        import types
+        path = provenance.trusted(Path(__file__).absolute().with_name('transaction.py'))
+        t = types.ModuleType('isolated_transaction'); t.__file__ = str(path)
+        exec(compile(provenance.safe_read(path), str(path), 'exec'), t.__dict__)
         (root / 'archlinux').mkdir(); (root / 'archlinux/file').write_bytes(b'x' * 131072)
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]
@@ -55,6 +71,7 @@ server {{ listen unix:{runtime}/status.sock; project_live off; location = / {{ p
 }}
 ''')
         command = ['systemd-run', '--unit=' + unit, '-p', 'Type=forking', '-p', 'PIDFile=' + str(runtime / 'pid'), '-p', 'RuntimeDirectory=' + root.name, '-p', 'RuntimeDirectoryMode=0700', '-p', 'GuessMainPID=yes', '-p', 'NotifyAccess=none', '-p', 'KillMode=mixed', '-p', 'Restart=no', '-p', 'TimeoutStopSec=5', '-p', 'ExecStop=-/sbin/start-stop-daemon --quiet --stop --retry QUIT/5 --pidfile ' + str(runtime / 'pid'), str(private / 'nginx'), '-p', str(root) + '/', '-c', str(conf)]
+        launched = True
         subprocess.run(command, check=True, capture_output=True, timeout=15)
         end = time.monotonic() + 5
         while not (runtime / 'status.sock').exists():
@@ -101,12 +118,15 @@ server {{ listen unix:{runtime}/status.sock; project_live off; location = / {{ p
         assert payload == b'x' * 131072
         result.update(passed=True, body_bytes=len(payload), response_bytes=len(body), phase=tx.j['phase'], manifest_sha256=manifest_sha, journal=tx.j)
     finally:
-        t.signal.setitimer(t.signal.ITIMER_REAL, 0)
-        t.ACTIVE_DEADLINE = None
+        if t is not None:
+            t.signal.setitimer(t.signal.ITIMER_REAL, 0)
+            t.ACTIVE_DEADLINE = None
         if client: client.close()
-        result['unit'] = subprocess.run(['systemctl', 'show', unit, '-p', 'MainPID', '-p', 'ActiveState', '-p', 'Result'], capture_output=True, text=True).stdout
+        if launched:
+            result['unit'] = subprocess.run(['systemctl', 'show', unit, '-p', 'MainPID', '-p', 'ActiveState', '-p', 'Result'], capture_output=True, text=True, timeout=15).stdout
         if (root / 'error.log').exists(): result['nginx_log'] = (root / 'error.log').read_text()
-        subprocess.run(['systemctl', 'stop', unit], capture_output=True, timeout=15)
+        if launched:
+            subprocess.run(['systemctl', 'stop', unit], capture_output=True, timeout=15)
         shutil.rmtree(root)
         result['cleanup'] = not root.exists() and not runtime.exists()
         output.write_text(json.dumps(result, indent=2))

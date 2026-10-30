@@ -284,10 +284,11 @@ class HarnessPolicyTests(unittest.TestCase):
         m = load()
         spec = importlib.util.spec_from_file_location('isolated_reexec', PATH.with_name('isolated.py'))
         harness = importlib.util.module_from_spec(spec)
-        with patch.dict(sys.modules, {'transaction': m}): spec.loader.exec_module(harness)
-        import inspect
-        self.assertIn('t.trusted(Path(__file__).absolute())', inspect.getsource(harness.run))
-        with patch.object(m.os, 'geteuid', return_value=0), patch.object(m, 'trusted', side_effect=ValueError('untrusted source')), patch.object(Path, 'mkdir') as mkdir:
+        gate_spec = importlib.util.spec_from_file_location('root_stage', PATH.with_name('root_stage.py'))
+        gate = importlib.util.module_from_spec(gate_spec)
+        gate_spec.loader.exec_module(gate)
+        with patch.dict(sys.modules, {'root_stage': gate}): spec.loader.exec_module(harness)
+        with patch.object(m.os, 'geteuid', return_value=0), patch.object(gate, 'trusted', side_effect=ValueError('untrusted source')), patch.object(Path, 'mkdir') as mkdir:
             with self.assertRaisesRegex(ValueError, 'untrusted source'):
                 harness.run(Path('/artifacts'), Path('/output'), 'forward')
             mkdir.assert_not_called()

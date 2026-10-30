@@ -6,10 +6,12 @@ restart, or deployment was performed for this PR.
 
 ## Blocking gates
 
-1. The new isolated transaction execution command is awaiting tool approval.
-   Its feature-absent RED was executed; forward and rollback GREEN have **not**
-   run. The earlier `upgrade-reexec` mechanism tests are not a substitute for
-   exercising these new installer bytes.
+1. Independent review blocked the old harness because it launched unverified
+   artifacts before preparation. The provenance-only fix and explicit replacement
+   commands in `ROOTSTAGING.md` require parent delta review and fresh normal tool
+   approval. They have NOT been submitted/executed. The original pending command
+   is invalid for these changed bytes and its 180-second timeout is insufficient.
+   Forward/rollback GREEN remains unrun; historical mechanism tests do not count.
 2. Fresh read-only inventory confirms mirror2's `asn.conf`, `nginx.conf`,
    configuration ancestors and existing include links have operator authority
    (UID/GID 1000); this is **not evidence of a new vulnerability**. The narrowly
@@ -143,9 +145,10 @@ worker, configuration, binary, unit, boot or namespace changes.
 ```sh
 python3 -m unittest discover -s tests -p test_http_reexec.py -v
 python3 -m unittest discover -s tests -p 'test_*.py' -q
-# Authorized disposable root/systemd tests, NOT production:
-sudo python3 -B ops/telemetry/http-reexec/isolated.py ARTIFACTS OUTPUT.json --case forward
-sudo python3 -B ops/telemetry/http-reexec/isolated.py ARTIFACTS OUTPUT.json --case rollback
+# Provenance regression tests (no privileged commands):
+python3 -B -m unittest discover -s tests -p test_harness_provenance.py -v
+# Privileged replacements are recorded explicitly in ROOTSTAGING.md.
+# Do not invoke isolated.py directly from the operator checkout.
 ```
 
 ARTIFACTS contains exact `nginx`, `old.so`, `candidate.deb`, and a `reader/`
@@ -155,13 +158,15 @@ creates only a UUID-scoped separate unit, private executable artifacts and a
 The rollback case injects a deadline failure after WINCH. Neither test result
 is presently claimed as passing.
 
-Completed local suite for this revision: **250 tests, OK, 3 skipped**
+Previous reviewed transaction suite: **250 tests, OK, 3 skipped**
 (**30 transaction tests**, including a matrix of before/after interruption windows).
 Feature REDs preceded readonly policy, parent-chain preservation, source gates,
 absolute deadline implementation and ambiguous/resumed rollback fixes. Existing
 behavior matrix cases are regression coverage, not separately claimed REDs.
 Generated HTML/runtime freshness also passed. Browser results are reported by CI,
-not inferred from the Python suite. Independent review is still pending.
+not inferred from the Python suite. The transaction review identified no blocker;
+the harness provenance delta still requires parent review. Current-head test/CI
+receipts are recorded separately; no root-runtime success is inferred.
 
 Official nginx `control.html` upgrading section was retrieved and read by the
 parent using **curl**, saved as `nginx-control-parent.html` in the parent scratch
