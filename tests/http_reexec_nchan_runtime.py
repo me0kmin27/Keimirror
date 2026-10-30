@@ -21,6 +21,73 @@ def sha(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def cleanup_fixture(tx, root, owned):
+    """Best effort per target; failures are aggregated, never hidden as success."""
+    errors = []
+    targets = {tuple(who) for who in owned}
+    for suffix in ('', '.oldbin'):
+        path = root / ('run/nginx.pid' + suffix)
+        try:
+            # Missing names are normal after exit/rename; retained identities below
+            # still get checked. Only typed publication churn gets a retry.
+            tx.trusted(path)
+            acquire_end = time.monotonic() + 1
+            while True:
+                try:
+                    pid = tx.published_pid(path)
+                    break
+                except tx.PIDPublicationPending:
+                    if time.monotonic() >= acquire_end:
+                        raise TimeoutError('cleanup publication deadline')
+                    time.sleep(.05)
+            who = tuple(tx.process(pid)['identity'])
+            if any(previous[0] == pid and previous != who for previous in targets):
+                raise ValueError('cleanup PID reused; retained start cannot be replaced')
+            targets.add(who)
+        except (FileNotFoundError, ProcessLookupError):
+            pass
+        except Exception as exc:
+            errors.append(f'{path}: {exc!r}')
+    pending = []
+    for target in sorted(targets):
+        who = list(target)
+        try:
+            proc = tx.process(who[0])
+            try:
+                process_root = os.readlink(f'/proc/{who[0]}/root')
+            except OSError as exc:
+                raise ValueError(f'cleanup chroot unverified: {exc!r}') from exc
+            if (proc['identity'] != who or proc['exe'] != str(root / 'usr/sbin/nginx') or
+                    process_root != str(root) or proc['uid'] or
+                    not proc['title'].startswith('nginx: master process ')):
+                raise ValueError('cleanup refuses unproved identity/executable/chroot')
+            tx.signal_identity(who, 'QUIT')
+            pending.append(who)
+        except (FileNotFoundError, ProcessLookupError):
+            pass
+        except Exception as exc:
+            errors.append(f'{who}: {exc!r}')
+    end = time.monotonic() + 5
+    while pending:
+        for who in pending[:]:
+            try:
+                if tx.process(who[0])['identity'] != who:
+                    raise ValueError('cleanup PID reused; absence unverified')
+            except (FileNotFoundError, ProcessLookupError):
+                pending.remove(who)
+            except Exception as exc:
+                errors.append(f'{who}: {exc!r}')
+                pending.remove(who)
+        if not pending:
+            break
+        if time.monotonic() >= end:
+            errors.append(f'cleanup absence deadline: {pending!r}')
+            break
+        time.sleep(.05)
+    if errors:
+        raise RuntimeError('cleanup incomplete: ' + '; '.join(errors))
+
+
 def run(args):
     assert os.geteuid() == 0
     for p in (args.source, args.archive, args.manifest, args.candidate, args.root.parent):
@@ -42,16 +109,9 @@ def run(args):
     root.mkdir(mode=0o700)
     # Cover startup failures too, before the main rollback test's finally block.
     import atexit
+    owned = []
     def cleanup_startup():
-        for suffix in ('', '.oldbin'):
-            try:
-                pid = tx.pidfile(root / ('run/nginx.pid' + suffix))
-                proc = tx.process(pid)
-                if proc['exe'] != str(root / 'usr/sbin/nginx'):
-                    raise ValueError('cleanup refuses foreign executable')
-                tx.signal_identity(proc['identity'], 'TERM')
-            except (FileNotFoundError, ProcessLookupError):
-                pass
+        cleanup_fixture(tx, root, owned)
     atexit.register(cleanup_startup)
     with tarfile.open(fileobj=io.BytesIO(blob)) as archive:
         for item in archive:
@@ -119,12 +179,12 @@ location /slow {{ limit_rate 1k; }}
                 if result: return result
             except (FileNotFoundError, ProcessLookupError, ConnectionRefusedError):
                 pass
-            except ValueError as exc:
-                # Harness-only baseline acquisition, not a production readiness bypass.
-                if str(exc) != 'child inventory changed': raise
+            except tx.ProcessSnapshotChurn:
+                pass
             time.sleep(.05)
         raise TimeoutError('isolated runtime deadline')
     old = tx.process(wait(lambda: tx.pidfile(root / 'run/nginx.pid')))['identity']
+    owned.append(old)
     new = None; held = None
     signals = []
     b = tx.Linux.__new__(tx.Linux)
@@ -165,6 +225,7 @@ location /slow {{ limit_rate 1k; }}
             held.sendall(b'GET /slow HTTP/1.0\r\n\r\n'); assert held.recv(1024)
         load.write_text(f'load_module {newpath};\n')
         signal(old, 'USR2'); new = b.discover()
+        owned.append(new)
         new_workers = wait(lambda: (w if len(w := tx.children(new)) == args.workers else None))
         b.ready(new)
         # Every production dynamic module, including Nchan, is actually mapped.
@@ -209,19 +270,14 @@ location /slow {{ limit_rate 1k; }}
                        original_workers_unchanged=(all(tx.process(w[0])['identity'] == w for w in original_workers) if args.mode == 'red' else tx.children(old)==original_workers),
                        exact_nchan_assertion=collision,
                        body_sha256=probe(), protected_unchanged=True)
-        print(json.dumps(outcome), flush=True)
-        (root / 'result.json').write_text(json.dumps(outcome, indent=2))
     finally:
         if held: held.close()
-        # Only this exclusive chroot's identity-proved masters; never system nginx.
-        for who in (new, old):
-            if who:
-                try: tx.signal_identity(who, 'TERM')
-                except (ProcessLookupError, FileNotFoundError): pass
-        end = time.monotonic() + 5
-        while time.monotonic() < end:
-            if not any(Path(f'/proc/{w[0]}').exists() for w in (new, old) if w): break
-            time.sleep(.05)
+        try:
+            cleanup_startup()
+        finally:
+            atexit.unregister(cleanup_startup)
+    print(json.dumps(outcome), flush=True)
+    (root / 'result.json').write_text(json.dumps(outcome, indent=2))
 
 
 def verify(paths):

@@ -492,6 +492,10 @@ def pidfile(path):
     return int(raw)
 
 
+class ProcessSnapshotChurn(Exception):
+    """Observed child disappearance or inventory transition, never validation failure."""
+
+
 def children(master):
     first = process(master[0])
     if first['identity'] != master:
@@ -499,16 +503,33 @@ def children(master):
     path = f'/proc/{master[0]}/task/{master[0]}/children'
     pids = read(path, 16384).split()
     workers = []
+    observed = []
     for raw in pids:
-        p = process(int(raw))
+        if not re.fullmatch(rb'[1-9][0-9]{0,9}', raw):
+            raise ValueError('invalid child PID')
+        try:
+            p = process(int(raw))
+        except (FileNotFoundError, ProcessLookupError) as exc:
+            raise ProcessSnapshotChurn('child vanished during inventory') from exc
+        observed.append(p)
         if p['parent'] != master[0] or p['exe'] != first['exe'] or p['cgroup'] != first['cgroup']:
             raise ValueError('child ancestry mismatch')
         if p['title'] in ('nginx: worker process', 'nginx: worker process is shutting down'):
             workers.append(p['identity'])
         elif p['title'] not in ('nginx: cache manager process', 'nginx: cache loader process') and not p['title'].startswith('nginx: master process '):
             raise ValueError('unknown child role')
-    if pids != read(path, 16384).split() or process(master[0]) != first:
-        raise ValueError('child inventory changed')
+    for p in observed:
+        try:
+            current = process(p['identity'][0])
+        except (FileNotFoundError, ProcessLookupError) as exc:
+            raise ProcessSnapshotChurn('child vanished during inventory') from exc
+        if any(current[k] != p[k] for k in ('identity', 'parent', 'exe', 'cgroup')):
+            raise ValueError('child identity/ancestry changed')
+    final_pids = read(path, 16384).split()
+    if process(master[0]) != first:
+        raise ValueError('master identity changed')
+    if pids != final_pids:
+        raise ProcessSnapshotChurn('child inventory changed')
     return sorted(workers)
 
 
@@ -704,14 +725,15 @@ class Linux:
     def remaining(self):
         return self.clock.remaining()
 
-    def wait(self, predicate):
+    def wait(self, predicate, retry=(FileNotFoundError, ProcessLookupError, ConnectionRefusedError)):
         while True:
             self.remaining()
             try:
                 value = predicate()
                 if value:
+                    self.remaining()
                     return value
-            except (FileNotFoundError, ProcessLookupError, ConnectionRefusedError):
+            except retry:
                 pass
             time.sleep(min(.1, self.remaining()))
 
@@ -837,10 +859,18 @@ class Linux:
             if listeners(who[0]) != self.m['listeners']:
                 raise ValueError('listener inheritance mismatch')
             for worker in workers:
-                if process(worker[0])['title'] != 'nginx: worker process' or not set(self.m['listeners']) <= sockets(worker[0]):
+                try:
+                    p = process(worker[0])
+                    held = sockets(worker[0])
+                except (FileNotFoundError, ProcessLookupError) as exc:
+                    raise ProcessSnapshotChurn('worker vanished during readiness') from exc
+                if (p['identity'] != worker or p['parent'] != who[0] or
+                        p['exe'] != self.s['binary'] or p['cgroup'] != self.m['old']['cgroup']):
+                    raise ValueError('worker identity/ancestry changed')
+                if p['title'] != 'nginx: worker process' or not set(self.m['listeners']) <= held:
                     return False
             return True
-        return self.wait(check)
+        return self.wait(check, retry=(ProcessSnapshotChurn,))
 
     def original_ready(self):
         """Pre-WINCH only: no replacement generation may satisfy this proof."""
@@ -887,7 +917,7 @@ class Linux:
             if p['identity'] != who:
                 raise ValueError('PID reused during drain; never signal it')
             return not children(who)
-        self.wait(check)
+        self.wait(check, retry=(ProcessSnapshotChurn,))
 
     def adopted(self, who):
         def check():
