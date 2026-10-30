@@ -1,15 +1,33 @@
 # ROOTSTAGING — proposed replacement, NOT executed or approved
 
-The previous pending operator-checkout command is superseded because the
-independent review found an actual pre-validation root-execution defect. Its
-180-second executor deadline is also insufficient. This is a new logic-change
-candidate, not an approval bypass or a replay of that held command.
+The preceding provenance delta at `0f1895a` passed independent review and exact
+local forward/rollback execution. Those runs did not prove the complete requested
+acceptance: 403/416 and zero uncertainty were missing, and cleanup deleted the
+production acceptance receipt. This replacement changes ONLY the isolated fixture
+and supporting tests/manifests/docs; transaction.py, readers and package stay pinned.
 
-Parent delta review and the normal tool approval gate must approve each exact
-command below before execution. Do not wrap commands in a shell `-c`, remove
-flags, move code to conceal it, or infer approval from source CI. The Python
-`-c` bootstrap is explicit and must pass the normal script-execution approval.
-No privileged staging, harness runtime, production mutation, or merge has run.
+Parent independent delta review and the normal tool approval gate must approve each
+exact command below before execution. The source author cannot self-approve this
+privileged harness change. Do not wrap commands in shell `-c`, remove flags, or infer
+approval from source CI. The explicit Python `-c` bootstrap must pass the normal
+script-execution approval. None of THESE replacement commands has been submitted
+or executed. No production mutation or merge is authorized.
+
+The isolated fixture reuses nginx-live/tests/test_errors.py's real deny-all 403,
+missing-static 404 and unsatisfiable Range 416 cases, plus static 200. Before USR2,
+old 403 must show uncertain >= 1. After new readiness and old WINCH, old worker
+accept-listener FDs must be gone before any candidate probe; every raw status
+sample must identify the new worker set. Each candidate case must show uncertain=0,
+active_uncertain=0, exact request RX and complete header+body TX, with strictly
+increasing BODY TX while its completion log has not advanced. Normal transaction
+acceptance remains permissive for production background uncertainty.
+
+Before stopping the unit or deleting runtime files, preserve the exact production
+acceptance.json and bounded raw status/request/response/completion-log bytes with
+wall and monotonic timestamps in OUTPUT-parent/{forward,rollback}-acceptance/.
+These exclusive directories are mode 0700, receipts mode 0400, and sha256.json
+binds both acceptance.json and isolated-proof.json. All raw evidence stays private;
+public stdout contains only case/pass/body-size/phase/cleanup, never addresses.
 
 ## Trust and closure
 
@@ -45,9 +63,11 @@ This is not a realtime bound on kernel-uninterruptible I/O.
 The target below is proposed, not asserted to exist. After approved staging,
 root_stage.verify checks actual owner/group/mode/ancestor and digest metadata;
 forward/rollback independently repeat that verification. No existing stage is
-reused or repaired. Outputs are private target/forward.json and rollback.json.
+reused or repaired. Outputs are private target/forward.json and rollback.json, plus the retained
+acceptance directories described above. The new manifest-suffixed target is
+exclusive: never reuse the prior root stage.
 
-Root manifest SHA256: `11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415`
+Root manifest SHA256: `833a8170aa5581291954fb729fdb598f8f8c2c240fd642455e7e7243ddff2c76`
 
 Stager SHA256: `ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f`
 
@@ -95,7 +115,7 @@ if hashlib.sha256(data).hexdigest() != expected:
 sys.argv = [script] + sys.argv[3:]
 __file__ = script
 exec(compile(data, script, "exec"), globals())
-' /home/me0kmin27/.hermes/cache/scratch/pr45-provenance-frozen-11b065c6761e-v2/source/root_stage.py ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f stage /var/lib/keimirror-pr45-11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415 11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415 --source /home/me0kmin27/.hermes/cache/scratch/pr45-provenance-frozen-11b065c6761e-v2/source --artifacts /home/me0kmin27/.hermes/cache/scratch/pr45-provenance-frozen-11b065c6761e-v2/artifacts
+' /home/me0kmin27/.hermes/cache/scratch/pr45-acceptance-frozen-833a8170aa55/source/root_stage.py ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f stage /var/lib/keimirror-pr45-acceptance-833a8170aa5581291954fb729fdb598f8f8c2c240fd642455e7e7243ddff2c76 833a8170aa5581291954fb729fdb598f8f8c2c240fd642455e7e7243ddff2c76 --source /home/me0kmin27/.hermes/cache/scratch/pr45-acceptance-frozen-833a8170aa55/source --artifacts /home/me0kmin27/.hermes/cache/scratch/pr45-acceptance-frozen-833a8170aa55/artifacts
 ```
 
 ## FORWARD
@@ -142,7 +162,7 @@ if hashlib.sha256(data).hexdigest() != expected:
 sys.argv = [script] + sys.argv[3:]
 __file__ = script
 exec(compile(data, script, "exec"), globals())
-' /var/lib/keimirror-pr45-11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415/root_stage.py ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f forward /var/lib/keimirror-pr45-11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415 11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415
+' /var/lib/keimirror-pr45-acceptance-833a8170aa5581291954fb729fdb598f8f8c2c240fd642455e7e7243ddff2c76/root_stage.py ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f forward /var/lib/keimirror-pr45-acceptance-833a8170aa5581291954fb729fdb598f8f8c2c240fd642455e7e7243ddff2c76 833a8170aa5581291954fb729fdb598f8f8c2c240fd642455e7e7243ddff2c76
 ```
 
 ## ROLLBACK
@@ -189,6 +209,6 @@ if hashlib.sha256(data).hexdigest() != expected:
 sys.argv = [script] + sys.argv[3:]
 __file__ = script
 exec(compile(data, script, "exec"), globals())
-' /var/lib/keimirror-pr45-11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415/root_stage.py ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f rollback /var/lib/keimirror-pr45-11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415 11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415
+' /var/lib/keimirror-pr45-acceptance-833a8170aa5581291954fb729fdb598f8f8c2c240fd642455e7e7243ddff2c76/root_stage.py ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f rollback /var/lib/keimirror-pr45-acceptance-833a8170aa5581291954fb729fdb598f8f8c2c240fd642455e7e7243ddff2c76 833a8170aa5581291954fb729fdb598f8f8c2c240fd642455e7e7243ddff2c76
 ```
 

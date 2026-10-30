@@ -6,12 +6,19 @@ restart, or deployment was performed for this PR.
 
 ## Blocking gates
 
-1. Independent review blocked the old harness because it launched unverified
-   artifacts before preparation. The provenance-only fix and explicit replacement
-   commands in `ROOTSTAGING.md` require parent delta review and fresh normal tool
-   approval. They have NOT been submitted/executed. The original pending command
-   is invalid for these changed bytes and its 180-second timeout is insufficient.
-   Forward/rollback GREEN remains unrun; historical mechanism tests do not count.
+1. The provenance delta at `0f1895a` passed independent review and exact local
+   forward/rollback execution (both retained the full 131072-byte slow body and
+   cleaned up). That harness omitted strict isolated 403/416 accounting and lost
+   `acceptance.json` during cleanup. This new **isolated acceptance-only delta**
+   adds the proven 200/403/404/416 wire cases, old-403 negative control, old-worker
+   listener fence, candidate worker identity, zero uncertainty, exact RX/whole
+   TX, and body progress before completion. Production `transaction.py` remains
+   byte-identical and intentionally permits unrelated background uncertainty.
+   Private raw samples and the original acceptance receipt are copied and hashed
+   under OUTPUT's parent before unit/runtime cleanup. The new exact commands in
+   `ROOTSTAGING.md` require independent parent delta review and normal tool
+   approval; this source author has NOT executed or approved the new root harness.
+   Do not reuse the prior root stage or infer runtime acceptance from source CI.
 2. Fresh read-only inventory confirms mirror2's `asn.conf`, `nginx.conf`,
    configuration ancestors and existing include links have operator authority
    (UID/GID 1000); this is **not evidence of a new vulnerability**. The narrowly
