@@ -1,0 +1,48 @@
+[Unit]
+Description=Keimirror namespace-proved private RPC observation helper
+After=local-fs.target
+Before=keimirror-status-collector.service
+StartLimitIntervalSec=30s
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/bin/python3 -E -s -B /opt/keimirror-telemetry/rpc_helper.py
+RuntimeDirectory=keimirror-rpc
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=no
+UMask=0077
+# Setup only; Python helper clears the entire bounding/ambient sets and drops
+# SYS_ADMIN/SETPCAP before binding IPC. Retained E/P mask is exactly 0x80004.
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_SETPCAP CAP_DAC_READ_SEARCH CAP_SYS_PTRACE
+NoNewPrivileges=yes
+PrivateNetwork=no
+PrivateUsers=no
+PrivateMounts=yes
+RestrictNamespaces=mnt
+RestrictAddressFamilies=AF_UNIX
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+LimitCORE=0
+LimitNOFILE=64
+MemoryMax=64M
+CPUQuota=50%
+TasksMax=4
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=3s
+KillMode=control-group
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target

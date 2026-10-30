@@ -175,7 +175,7 @@ def parse_ss(text):
     return records
 
 
-def decode_diag(data):
+def decode_diag(data) -> dict:
     """Decode Linux inet_diag_msg + rtattrs; no address data escapes."""
     import struct
     if len(data) < 72 or data[0] not in (2, 10):
@@ -203,7 +203,7 @@ def decode_diag(data):
     return result
 
 
-def read_diag():
+def read_diag(*, endpoints=False):
     """Bounded IPv4/IPv6 NETLINK_SOCK_DIAG dump, explicit TCP_INFO zeros.
 
     Reject incomplete/interrupted multipart dumps; do not fall back to ss
@@ -242,7 +242,13 @@ def read_diag():
                             raise ValueError('diagnostic completion error')
                         done = True
                     elif kind == 20 and msgflags & 2 and not done:
-                        result.append(decode_diag(body))
+                        item = decode_diag(body)
+                        if endpoints:
+                            width = 4 if family == 2 else 16
+                            item['endpoint'] = [family, body[8:8+width].hex(),
+                                                body[24:24+width].hex(),
+                                                *struct.unpack_from('!HH', body, 4)]
+                        result.append(item)
                         if len(result) > MAX_SOCKETS:
                             raise ValueError('socket count bound')
                     else:
@@ -328,7 +334,7 @@ def delivery(pid, table, jobs, root, record, config_path, *, dependencies=None):
 
 
 def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=None,
-           rsync_config: str | Path = '/etc/rsyncd.conf', diag_reader=None):
+           rsync_config: str | Path = '/etc/rsyncd.conf', diag_reader=None, rpc_reader=None):
 
     """Return ``(rows, state)``; existing sync_* keys include rsync delivery.
 
@@ -343,6 +349,11 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
     diag_reader (production semantics with synthetic diagnostics). diag_reader
     returns the sanitized dict list produced by read_diag; proc_root and
     rsync_config redirect filesystem fixtures. Patch time.monotonic for tests.
+
+    Production also attempts two fresh, root-authenticated private RPC helper
+    reads, joined to repeated diagnostic/FD scans within this same two-second
+    observation. Failure never exempts a socket. rpc_reader is a fixture seam;
+    production never accepts a cached proof or caller-supplied exclusion list.
 
     State version 2 has boot, at, monotonic, netns, direct, repositories.
     A repository's empty dict means a complete observed-empty baseline; missing
@@ -366,9 +377,25 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
                         if item[3] and os.path.basename(item[3][0]) == 'rsync'}
         records = parse_ss((ss_reader or read_ss)())
         namespace = None
+        rpc_excluded = set()
         if direct:
             namespace = os.readlink(root/'self/ns/net')
-            diagnostics = (diag_reader or read_diag)()
+            if __package__:
+                from . import rpc
+            else:
+                import rpc
+            if rpc_reader is None and ss_reader is None:
+                rpc_reader = rpc.read_snapshot
+                rpc.protect_memory()
+            diagnostic_reader = diag_reader or (lambda: read_diag(endpoints=rpc_reader is not None))
+            diagnostics = diagnostic_reader()
+            if rpc_reader is not None:
+                try:
+                    rpc_excluded = rpc.exclusions(diagnostics, diagnostic_reader, rpc_reader, root)
+                except (OSError, ValueError, KeyError, UnicodeError, TypeError):
+                    # Missing proof cannot exempt an ownerless socket, but does
+                    # not destroy independently verified rsync attribution.
+                    rpc_excluded = set()
             if len(diagnostics) > MAX_SOCKETS:
                 raise ValueError('socket count bound')
             by_key = {}
@@ -415,7 +442,11 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
             if record.startswith('LISTEN '):
                 continue
             pids = set(map(int, re.findall(r'\bpid=(\d+)', record)))
-            if not pids and not record.startswith(('TIME-WAIT ', 'FIN-WAIT-1 ', 'FIN-WAIT-2 ')):
+            rpc_identity = (re.findall(r'\bino:(\d+)\b', record),
+                            re.findall(r'\bsk:([0-9a-fA-F]+)\b', record))
+            proved_rpc = (len(rpc_identity[0]) == len(rpc_identity[1]) == 1 and
+                          (int(rpc_identity[0][0]), int(rpc_identity[1][0], 16)) in rpc_excluded)
+            if not pids and not proved_rpc and not record.startswith(('TIME-WAIT ', 'FIN-WAIT-1 ', 'FIN-WAIT-2 ')):
                 empty_complete = False
             owners, identities = set(), []
             unattributed = False
