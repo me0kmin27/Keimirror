@@ -373,6 +373,75 @@ class ObservationChurn(FileNotFoundError):
     """An incomplete proc inventory; only a whole new observation can recover."""
 
 
+def recover_holders(root, table, candidates, diagnostic_reader, namespace):
+    """One bounded complete FD inventory, bracketed by live socket identities.
+
+    Positive FDs alone are insufficient: shared holders must all be visible.
+    Any incomplete scan loses this optional proof, never existing attribution.
+    ENOENT propagates so the caller retries the whole observation.
+    """
+    found = {key: [] for key in candidates}
+    by_inode = {}
+    for key in candidates:
+        if key[0] in by_inode:
+            raise ValueError('ambiguous holder inode')
+        by_inode[key[0]] = key
+    count = 0
+    scanned = set()
+    with os.scandir(root) as entries:
+        for index, entry in enumerate(entries):
+            observation_budget()
+            if index >= MAX_PROCESSES:
+                raise ValueError('holder process bound')
+            if not entry.name.isdecimal():
+                continue
+            pid = int(entry.name)
+            scanned.add(pid)
+            directory = Path(entry.path)
+            if pid not in table:
+                raise ObservationChurn('new process during holder inventory')
+            with os.scandir(directory/'fd') as fds:
+                for fd in fds:
+                    observation_budget()
+                    count += 1
+                    if count > 131072:
+                        raise ValueError('holder descriptor bound')
+                    target = os.readlink(fd.path)
+                    match = re.fullmatch(r'socket:\[(\d+)\]', target)
+                    if match and int(match[1]) in by_inode:
+                        if not fd.name.isdecimal():
+                            raise ValueError('invalid descriptor')
+                        current = process(directory)
+                        if (current[:4] != table[pid][:4] or current[4] in ('Z', 'X', 'x')
+                                or os.readlink(directory/'ns/net') != namespace):
+                            raise ValueError('holder identity changed')
+                        key = by_inode[int(match[1])]
+                        found[key].append((pid, Path(fd.path), target))
+    if scanned != set(table):
+        raise ObservationChurn('process lost during holder inventory')
+    second = diagnostic_reader()
+    observation_budget()
+    if len(second) > MAX_SOCKETS:
+        raise ValueError('holder diagnostic bound')
+    for key, holders in found.items():
+        first = candidates[key]
+        matches = [item for item in second if item['ino'] == key[0]]
+        if (not holders or first.get('endpoint') is None or key[0] <= 0
+                or key[1] in (0, 2**64-1) or len(matches) != 1
+                or any(first[k] != matches[0].get(k) for k in
+                       ('ino', 'cookie', 'uid', 'state', 'endpoint'))):
+            found[key] = []
+            continue
+        for pid, path, target in holders:
+            observation_budget()
+            current = process(root/str(pid))
+            if (current[:4] != table[pid][:4] or current[4] in ('Z', 'X', 'x')
+                    or os.readlink(root/str(pid)/'ns/net') != namespace
+                    or os.readlink(path) != target):
+                raise ValueError('holder changed after diagnostics')
+    return found
+
+
 MAX_OBSERVATION_ATTEMPTS = 3
 
 
@@ -526,6 +595,28 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                     status = TCP_STATES.get(item['state'], 'UNKNOWN')
                     joined.append('%s 0 0 - - ino:%s sk:%x' % (status, *key))
             records = joined
+        recovered = {}
+        if direct:
+            candidates = {}
+            for record in records:
+                if re.search(r'\bpid=\d+', record) or record.startswith(('LISTEN ', 'TIME-WAIT ', 'FIN-WAIT-1 ', 'FIN-WAIT-2 ')):
+                    continue
+                inos = re.findall(r'\bino:(\d+)\b', record)
+                cookies = re.findall(r'\bsk:([0-9a-fA-F]+)\b', record)
+                if len(inos) == len(cookies) == 1:
+                    key = (int(inos[0]), int(cookies[0], 16))
+                    if (key in by_key and key not in rpc_excluded
+                            and by_key[key].get('endpoint') is not None
+                            and by_key[key]['state'] in (1, 2, 3, 8, 9, 11)):
+                        candidates[key] = by_key[key]
+            if candidates:
+                try:
+                    recovered = recover_holders(root, table, candidates, diagnostic_reader, namespace)
+                except FileNotFoundError:
+                    raise
+                except (OSError, ValueError, KeyError, TypeError):
+                    observation_budget()
+                    recovered = {}
         # Production uses the actual observation time, not collector startup.
         # An explicit timestamp keeps isolated fixtures deterministic.
         now = time.time() if now is None else now
@@ -537,6 +628,7 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
         checked = set()
         deliveries = []
         held = []
+        recovery_events = []
         empty_complete = direct
         for record in records:
             observation_budget()
@@ -545,6 +637,20 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
             pids = set(map(int, re.findall(r'\bpid=(\d+)', record)))
             rpc_identity = (re.findall(r'\bino:(\d+)\b', record),
                             re.findall(r'\bsk:([0-9a-fA-F]+)\b', record))
+            recovered_socket = False
+            if not pids and all(len(x) == 1 for x in rpc_identity):
+                key = (int(rpc_identity[0][0]), int(rpc_identity[1][0], 16))
+                holders = recovered.get(key, [])
+                if holders:
+                    recovered_socket = True
+                    held.extend(holders)
+                    for pid, path, target in holders:
+                        record += ' pid=%d,fd=%s' % (pid, path.name)
+                        pids.add(pid)
+                    if not re.search(r'\buid:\d+', record):
+                        record += ' uid:%d' % by_key[key]['uid']
+                    if not re.search(r'\bbytes_received:\d+', record) and by_key[key]['rx'] is not None and by_key[key]['tx'] is not None:
+                        record += ' bytes_received:%d bytes_sent:%d' % (by_key[key]['rx'], by_key[key]['tx'])
             proved_rpc = (len(rpc_identity[0]) == len(rpc_identity[1]) == 1 and
                           (int(rpc_identity[0][0]), int(rpc_identity[1][0], 16)) in rpc_excluded)
             if not pids and not proved_rpc and not record.startswith(('TIME-WAIT ', 'FIN-WAIT-1 ', 'FIN-WAIT-2 ')):
@@ -557,6 +663,7 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                      Reason.TCP_OWNERLESS_ROOT if item['uid'] == 0 else Reason.TCP_OWNERLESS_NONROOT)
             owners, identities = set(), []
             unattributed = False
+            recovered_unrelated = recovered_socket
             socket_uids = re.findall(r'\buid:(\d+)\b', record)
             for pid in sorted(pids):
                 # Verification dependencies include excluded holders/ancestors;
@@ -575,7 +682,11 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                 unattributed |= not matches or not chain
                 if not serving and socket_uids and (len(socket_uids) != 1 or int(socket_uids[0]) != table[pid][2]):
                     unattributed = True
+                    if recovered_socket:
+                        recovered_unrelated = False
+                        empty_complete = False
                 if not matches and table[pid][3] and os.path.basename(table[pid][3][0]) in ('rsync', 'rsync-ssl', 'openssl', 'ssh'):
+                    recovered_unrelated = False
                     emit(Reason.TCP_UNCLASSIFIED_TRANSPORT)
                     empty_complete = False
                 if direct and matches:
@@ -594,6 +705,8 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                     enoent = Reason.TCP_OTHER_ENOENT
                 owners.update(matches)
                 identities.extend(chain)
+            if recovered_unrelated and not owners:
+                recovery_events.extend((Reason.TCP_HOLDER_RECOVERED_UNRELATED, rid) for rid in rows)
             if len(owners) != 1 or unattributed:
                 uncertain_cookies.update(str(int(c, 16)) for c in re.findall(r'\bsk:([0-9a-fA-F]+)\b', record))
                 invalid.update(owners)
@@ -621,6 +734,8 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                 if key in sockets[rid] and sockets[rid][key] != value:
                     invalid.add(rid)
                 sockets[rid][key] = value
+                if recovered_socket:
+                    recovery_events.append((Reason.TCP_HOLDER_RECOVERED_PROJECT, rid))
         # Unknown host sockets are outside observed-job coverage. A cookie
         # already tied to a job is not: loss of ownership invalidates that job.
         for key in uncertain_cookies:
@@ -658,6 +773,8 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
             raise ValueError('boot changed')
         if direct and time.monotonic()-started > MAX_SAMPLE_SECONDS:
             raise ValueError('sampling window exceeded during verification')
+        for code, rid in recovery_events:
+            emit(code, rid)
         state = {'version': 2, 'boot': boot, 'at': now, 'monotonic': monotonic,
                  'netns': int(namespace[5:-1]) if namespace else None, 'direct': direct,
                  'repositories': {r: s for r, s in sockets.items() if (s or empty_complete) and r not in invalid}}

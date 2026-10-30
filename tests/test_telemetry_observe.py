@@ -392,6 +392,33 @@ class ObserveTests(unittest.TestCase):
         shim.chmod(0o755)
         return shim
 
+    def test_installed_shims_snapshot_sigign_without_seeking_live_proc_status(self):
+        # Reproduce the real startup failure: read's backward seek regenerates
+        # proc status after an earlier, variable-width State field changes.
+        library = self.root / 'proc-status-seek.so'
+        subprocess.run(['gcc', '-Wall', '-Werror', '-shared', '-fPIC', '-o', str(library),
+                        str(REPO / 'tests/proc_status_seek_fixture.c'), '-ldl'],
+                       capture_output=True, check=True, timeout=10)
+        program = self.native_signal_fixture()
+        launcher = ('import os, resource, signal, sys; '
+                    'resource.setrlimit(resource.RLIMIT_CORE, (0, 0)); '
+                    'signal.signal(signal.SIGABRT, signal.SIG_DFL); '
+                    'os.execv(sys.argv[1], sys.argv[1:])')
+        environment = dict(os.environ, LD_PRELOAD=str(library))
+        direct = subprocess.run([sys.executable, '-c', launcher, str(program), 'inspect'],
+                                env=environment, capture_output=True, timeout=5)
+        self.assertEqual(direct.returncode, 23, direct.stderr)
+        for name in ('rsync', 'rsync-ssl'):
+            with self.subTest(name=name):
+                shim = self.installed_shim(name, program)
+                result = subprocess.run([sys.executable, '-c', launcher, str(shim),
+                                         'inspect', 'src', str(self.destination)],
+                                        env=environment, capture_output=True, timeout=5)
+                self.assertEqual(result.returncode, 23, result.stderr)
+                self.assertEqual(result.stdout, direct.stdout)
+                self.assertEqual(result.stderr, b'')
+                self.assertEqual(json.loads(self.state_file.read_text())['exit_code'], 23)
+
     def test_installed_shims_reap_failure_with_inherited_sigchld_ignored(self):
         # Set dispositions in an execing launcher, not unsafe preexec_fn test code.
         launcher = ('import os, signal, sys; '
@@ -562,7 +589,14 @@ int main(int argc, char **argv) {
                                                stderr=subprocess.PIPE)
                     pids = []
                     try:
-                        self.wait_file(ready)
+                        try:
+                            self.wait_file(ready)
+                        except AssertionError:
+                            if wrapper.poll() is not None:
+                                output, error = wrapper.communicate(timeout=3)
+                                self.fail(f'shim exited before native readiness: '
+                                          f'rc={wrapper.returncode}, stdout={output!r}, stderr={error!r}')
+                            raise
                         native, descendant, group = json.loads(ready.read_text())
                         pids = [native, descendant]
                         self.assertEqual(group, wrapper.pid, 'native must stay in the job group')
