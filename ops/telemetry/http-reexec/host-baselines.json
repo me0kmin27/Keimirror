@@ -1,0 +1,25 @@
+{
+  "deployment_authorized": false,
+  "ready_to_apply": false,
+  "inspection_kind": "read-only; no nginx -T or production signals",
+  "hosts": {
+    "19": {"hostname": "mirror", "expected_workers": 32, "quic_listeners": false, "worker_shutdown_timeout_directives": []},
+    "20": {"hostname": "mirror2", "expected_workers": 44, "quic_listeners": false, "worker_shutdown_timeout_directives": []}
+  },
+  "known_paths": {
+    "binary": "/usr/sbin/nginx",
+    "config": "/etc/nginx/nginx.conf",
+    "prefix": "/usr/share/nginx/",
+    "unit": "nginx.service",
+    "pid": "/run/nginx.pid",
+    "status": "/run/keimirror-live/status.sock",
+    "reader_dir": "/opt/keimirror-telemetry",
+    "load": "/usr/share/keimirror-live/load/project-live.conf",
+    "old_module": "/usr/lib/nginx/modules/ngx_http_project_live_module.so",
+    "new_module": "/usr/lib/nginx/modules/ngx_http_project_live_module-a5035e055ece858073606d8e4952167286914eafb8704e2cfa29a2bc97e247e5.so"
+  },
+  "known_load_sha256": "01e7bca23eb296b96d20ccfb23b0bd82cd7cdd3d59ef1f8ce91d5b3cfcfbb46c",
+  "fresh_preflight_required": true,
+  "retained_backup_gate": "UNBOUND: require fresh host-specific existing backup verification; never substitute the other host's inventory",
+  "remaining_inputs": ["reviewed package private executable-filesystem staging path", "fresh retained backup path/digest binding", "bounded real-project download URL, byte count and SHA256", "unique project 404 URL prefix", "current timer inventory", "review of existing configuration ownership policy"]
+}
