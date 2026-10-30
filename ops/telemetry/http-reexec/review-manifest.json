@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
   "deployment_authorized": false,
-  "runtime_validation": "Previous 0f1895a exact forward/rollback passed but lacked complete acceptance. New isolated acceptance delta NOT SUBMITTED: independent parent review and normal tool approval required; source author has not run the new privileged harness.",
-  "base_commit": "85fc9c12a25a3c2d1fadb691b4082c55a7744cb6",
+  "runtime_validation": "Actual full 22-module two-worker RED/GREEN, full-drain and partial-drain controls passed. 32-worker fixture startup race; private local cleanup pending tool approval. See INCIDENT-RECOVERY.md. No deployment authorization.",
+  "base_commit": "27269689baa4ea664c4322bfdf8ecbf244b811d5",
   "reviewed_http_source_commit": "345717faaf50fa82ab8adcab0c4f84ebdcdeeaed",
   "nginx_sha256": "3f804ae7dda33a8368993d5d6087bfbc5fbf8c8ed1760af12fc9e8a74966d8a7",
   "old_module_sha256": "700adce1c053f3a0b1accf590f77d1f79d68a574599b47025af65b0dea0d02f1",
@@ -10,25 +10,30 @@
   "reviewed_package_sha256": "a057348974aa3ab2ae5297e02ddaac7b882d4c4534c285e2d6f649e69ca6ea4e",
   "package_action": "No installation; extract exact module into a versioned manual path; retain installed package metadata",
   "support_files": {
-    "ops/telemetry/http-reexec/README.md": "607df30624a6ad1a3e2ecdeb305033dc7611e39fc37d6ac8ad9b7f6a94e17064",
+    "ops/telemetry/http-reexec/README.md": "979e1c58e8ff6148fc3d6179f5d1868a78ad1863f0545c2340eac4f03ca15f92",
     "ops/telemetry/http-reexec/host-baselines.json": "23b8f68a022f5378d0a6c6be02b1500390182d34509b75e93bb2ce737d7efd71",
     "ops/telemetry/http-reexec/ROOTSTAGING.md": "557206583d04971f368931e97eb8ec5e2844f49d8f1212e442b7b023bbd96077",
     "ops/telemetry/http-reexec/reader/http_rates.py": "9b85d1cf82abec9124834c71139f9b8b514bed29dddf4c21bd26b213c1523386",
     "ops/telemetry/http-reexec/reader/private_reasons.py": "0b99330982235456c72fb45f9c46d81c08f640e673e50eece5aa72081647675b"
   },
   "files": {
-    "ops/telemetry/http-reexec/transaction.py": "007c171e31d97fcf18921fd58b5a3ade6bb3954d2d986478c5378ca025aeb721",
+    "ops/telemetry/http-reexec/transaction.py": "4c84aff6e55035cd625df0288c2bc658d3738e075ecc7eb811c2b00a3bd2dad6",
     "ops/telemetry/http-reexec/isolated.py": "7b9570e19c34d650969f9b2834e138ad21b4836c310d9f58797a08e9535d832b",
     "ops/telemetry/http-reexec/project-live.versioned.conf": "d9813d64c9df38232f1ed7528d90d8b9aa2acb089c62c5a08093ecc964fdbfd7",
-    "tests/test_http_reexec.py": "a8ac67ca5e84edb79ece730cd48a60a4c51919f79054be03d73fd2d7b732b581",
+    "tests/test_http_reexec.py": "cbc4de92d05eb76aa30d42b776d1257dc72cbb350ddd9ac479e0c05bf479297b",
     "ops/telemetry/http-reexec/inventory.py": "8319ceac5800ce89340f8e1a0463753c74907ecedf7829dc6459ee7a3cb08e61",
     "ops/telemetry/http-reexec/host-readonly-configs.json": "349f9be9512c89efbb21808a3b6cc895c0607cb9a34416a2486e8c2aadf6f539",
     "ops/telemetry/http-reexec/root_stage.py": "ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f",
-    "ops/telemetry/http-reexec/root-staging-manifest.json": "833a8170aa5581291954fb729fdb598f8f8c2c240fd642455e7e7243ddff2c76",
+    "ops/telemetry/http-reexec/root-staging-manifest.json": "b745cd7692b418fe60df49eff6dd4fce389ad5797efca32a6b6781976351ee19",
     "tests/test_harness_provenance.py": "4b216dd50c4ab6664e1cd1ff0668487b23355776b62c9e1019b1b5c23b41c237",
-    "tests/test_harness_acceptance.py": "caf67b9c28695873380bc3c95c6f908b166a8010a7d2498be2765327116f2062"
+    "tests/test_harness_acceptance.py": "caf67b9c28695873380bc3c95c6f908b166a8010a7d2498be2765327116f2062",
+    "tests/test_http_reexec_incident.py": "896ce94dab27adacf6c74f1e5a3d44a40fb08e92c2565332719ee45f67626b10",
+    "tests/http_reexec_nchan_runtime.py": "cb923eab7e938b85aa9af18fab9a82783fdd64d8d7212191d60b397eb648282b",
+    "tests/http_reexec_capture.py": "0f9fe2561c0fb429c7f663a6e3940d899b8965dd34391fc8ef0df9e2b782119e",
+    "ops/telemetry/http-reexec/INCIDENT-RECOVERY.md": "752a0604332e3e7d6714ad0183267547b3d7e8ce385c573ffe5851f35b778fb6",
+    "ops/telemetry/http-reexec/incident-runtime-evidence.json": "83a151cf6fc193302a9ba3c6fcffd0c9d2f1b1c6ea018be4739618244fec79f0"
   },
-  "independent_review": "0f1895a provenance delta and actual runtime passed. This isolated acceptance delta requires new independent parent review; no self-approval, merge or production deployment.",
+  "independent_review": "Required for incident-recovery logic change; previous review is not transferable. Draft only; no self-approval or merge.",
   "private_inventory_hashes": {
     "frozen-inventory-19.json": "76be8f641cbec99659b6bc0c15b9ad20056bc4562157ab92d812c75f060622fe",
     "frozen-inventory-20.json": "02d9d5584741b154be8075a3c28d75d31d25c9a792f294729f9c8cdc165652ec"
