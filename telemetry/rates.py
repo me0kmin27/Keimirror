@@ -23,6 +23,7 @@ zero. Private state contains only allowlisted repository IDs and numeric socket,
 process, root and namespace identities; no addresses, argv or paths.
 """
 import configparser
+from contextvars import ContextVar
 import math
 import os
 from pathlib import Path
@@ -39,6 +40,24 @@ MAX_SOCKETS = 4096
 MAX_COUNTER = 2**53 - 1
 # A delayed tick is unknown, never a long-window rate labelled as live.
 MAX_SAMPLE_SECONDS = 2
+_observation_deadline: ContextVar[float | None] = ContextVar('observation_deadline', default=None)
+
+
+def observation_budget(limit: float = MAX_SAMPLE_SECONDS):
+    """Remaining shared budget, including all discarded attempts.
+
+    Context-local so existing reader seams and flat installation keep their ABI;
+    sample always resets its token. Standalone readers retain their own bounds.
+    """
+    deadline = _observation_deadline.get()
+    if deadline is None:
+        return limit
+    remaining = deadline - time.monotonic()
+    if remaining < 0:
+        raise ValueError('observation deadline')
+    return min(limit, remaining)
+
+
 # Linux TCP states requested by read_diag, using the ss record names.
 TCP_STATES = {1: 'ESTAB', 2: 'SYN-SENT', 3: 'SYN-RECV', 4: 'FIN-WAIT-1',
               5: 'FIN-WAIT-2', 6: 'TIME-WAIT', 7: 'UNCONN', 8: 'CLOSE-WAIT',
@@ -47,10 +66,10 @@ TCP_STATES = {1: 'ESTAB', 2: 'SYN-SENT', 3: 'SYN-RECV', 4: 'FIN-WAIT-1',
 
 def read_ss():
     """Bound memory and wall time, including a hung/overproducing child."""
+    deadline = time.monotonic() + observation_budget()
     child = subprocess.Popen(['/usr/bin/ss', '-Htinpe'], stdout=subprocess.PIPE,
                              stderr=subprocess.DEVNULL, env={'LC_ALL': 'C', 'PATH': '/usr/bin:/bin'})
     assert child.stdout is not None  # PIPE was explicitly requested.
-    deadline = time.monotonic() + 2
     chunks = bytearray()
     try:
         with selectors.DefaultSelector() as selector:
@@ -76,8 +95,10 @@ def read_ss():
 
 
 def bounded(path, limit):
+    observation_budget()
     with Path(path).open('rb') as stream:
         data = stream.read(limit + 1)
+    observation_budget()
     if len(data) > limit:
         raise ValueError('proc bound')
     return data
@@ -103,6 +124,7 @@ def processes(root):
     result = {}
     with os.scandir(root) as entries:
         for index, entry in enumerate(entries):
+            observation_budget()
             if index >= MAX_PROCESSES:
                 raise ValueError('proc enumeration bound')
             if entry.name.isdecimal():
@@ -211,11 +233,12 @@ def read_diag(*, endpoints=False):
     """
     import socket
     import struct
-    deadline = time.monotonic() + 2
+    deadline = time.monotonic() + observation_budget()
     result, total = [], 0
     with socket.socket(socket.AF_NETLINK, socket.SOCK_RAW, 4) as sock:
         sock.bind((0, 0))
         for seq, family in enumerate((socket.AF_INET, socket.AF_INET6), 1):
+            sock.settimeout(observation_budget())
             request = struct.pack('=BBBBI', family, socket.IPPROTO_TCP, 2, 0,
                                   0xFFF & ~(1 << 10)) + bytes(40) + b'\xff'*8
             sock.sendto(struct.pack('=IHHII', 16+len(request), 20, 0x301, seq, 0)+request, (0, 0))
@@ -333,8 +356,47 @@ def delivery(pid, table, jobs, root, record, config_path, *, dependencies=None):
     return matches, chain
 
 
+class ObservationChurn(FileNotFoundError):
+    """An incomplete proc inventory; only a whole new observation can recover."""
+
+
+MAX_OBSERVATION_ATTEMPTS = 3
+
+
 def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=None,
            rsync_config: str | Path = '/etc/rsyncd.conf', diag_reader=None, rpc_reader=None):
+    """Acquire a complete observation; retry ENOENT, never partial inventories.
+
+    All attempts share one absolute two-second deadline. An incomplete attempt
+    contributes neither counters, identities, proof nor timestamps. See _sample
+    for the unchanged sampled-live rate and private-state contract.
+    """
+    direct = ss_reader is None or diag_reader is not None
+    started = time.monotonic() if direct else 0.0
+    token = _observation_deadline.set(started + MAX_SAMPLE_SECONDS if direct else None)
+    try:
+        for attempt in range(MAX_OBSERVATION_ATTEMPTS if direct else 1):
+            if direct and time.monotonic() - started >= MAX_SAMPLE_SECONDS:
+                break
+            try:
+                result = _sample(config, previous, now=now, proc_root=proc_root,
+                                 ss_reader=ss_reader, rsync_config=rsync_config,
+                                 diag_reader=diag_reader, rpc_reader=rpc_reader,
+                                 started=started)
+                if direct and time.monotonic() - started > MAX_SAMPLE_SECONDS:
+                    break
+                return result
+            except FileNotFoundError:
+                # Never skip the vanished PID/FD or keep earlier socket/RPC data.
+                continue
+    finally:
+        _observation_deadline.reset(token)
+    return ({rid: dict(sync_rx_bps=None, sync_tx_bps=None, rates_observed_at=None)
+             for rid in config['repositories']}, {})
+
+
+def _sample(config, previous, *, now, proc_root, ss_reader,
+            rsync_config, diag_reader, rpc_reader, started):
 
     """Return ``(rows, state)``; existing sync_* keys include rsync delivery.
 
@@ -366,7 +428,6 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
             for rid in config['repositories']}
     root = Path(proc_root)
     direct = ss_reader is None or diag_reader is not None
-    started = time.monotonic() if direct else 0.0
     try:
         boot = uuid.UUID(bounded(root/'sys/kernel/random/boot_id', 128).decode().strip()).int
         table = processes(root)
@@ -375,7 +436,9 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
                 for rid, j in config['repositories'].items()]
         roots_before = {pid: root_identity(root/str(pid)) for pid, item in table.items()
                         if item[3] and os.path.basename(item[3][0]) == 'rsync'}
+        observation_budget()
         records = parse_ss((ss_reader or read_ss)())
+        observation_budget()
         namespace = None
         rpc_excluded = set()
         if direct:
@@ -389,12 +452,17 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
                 rpc.protect_memory()
             diagnostic_reader = diag_reader or (lambda: read_diag(endpoints=rpc_reader is not None))
             diagnostics = diagnostic_reader()
+            observation_budget()
             if rpc_reader is not None:
                 try:
                     rpc_excluded = rpc.exclusions(diagnostics, diagnostic_reader, rpc_reader, root)
+                except ObservationChurn:
+                    raise
                 except (OSError, ValueError, KeyError, UnicodeError, TypeError):
                     # Missing proof cannot exempt an ownerless socket, but does
                     # not destroy independently verified rsync attribution.
+                    # An expired shared deadline is not an optional proof loss.
+                    observation_budget()
                     rpc_excluded = set()
             if len(diagnostics) > MAX_SOCKETS:
                 raise ValueError('socket count bound')
@@ -439,6 +507,7 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
         held = []
         empty_complete = direct
         for record in records:
+            observation_budget()
             if record.startswith('LISTEN '):
                 continue
             pids = set(map(int, re.findall(r'\bpid=(\d+)', record)))
@@ -521,6 +590,7 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
                 invalid.update(rid for rid, prior in prior_repos.items()
                                if isinstance(prior, dict) and uncertain_cookies.intersection(prior))
         for pid, path, target in held:
+            observation_budget()
             if os.readlink(path) != target or os.readlink(root/str(pid)/'ns/net') != namespace:
                 raise ValueError('socket holder changed')
         if direct and (os.readlink(root/'self/ns/net') != namespace or time.monotonic()-started > MAX_SAMPLE_SECONDS):
@@ -565,5 +635,7 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
                 if all(math.isfinite(rate) for rate in rates):
                     rows[rid].update(sync_rx_bps=rates[0], sync_tx_bps=rates[1], rates_observed_at=now)
         return rows, state
+    except FileNotFoundError:
+        raise
     except (OSError, ValueError, UnicodeError, IndexError, KeyError, configparser.Error, subprocess.SubprocessError):
         return rows, {}

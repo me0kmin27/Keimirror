@@ -107,3 +107,112 @@ checks require the actual/extracted nginx binary and remain skipped locally.
 Independent review and a separately authorized bounded exact-source integration
 canary are required before installation. No push, merge, service enablement,
 remote deployment or host privilege changes were performed here.
+
+## Whole-observation churn retry (local follow-up to `90c9cf9`)
+
+**Not deployment-approved.** The recovery-v3 exact-source canary failed: 12 ticks,
+7 valid state envelopes, 2 numeric repository-tick pairs out of 168, and 8 failed
+independent proof reads. Its manifest and frozen source remain unchanged. Local
+comparison verified that recovery-v3 `rates.py` and `rpc.py` are byte-identical to
+this branch's original `90c9cf9` sources, not a different installed implementation.
+
+### What the existing trace does and does not establish
+
+All eight recorded independent proof exceptions were ENOENT in `rpc.holders`:
+three at FD-directory enumeration (old line 175), five at FD readlink (old line
+180); five occurred in the first holder scan, three in the second. When such a
+failure occurred inside the old sampler, its proof handler applied no RPC
+exemptions. Separately,
+`rates.processes` reads every enumerated PID's stat/cmdline without skipping
+vanished entries; an ENOENT there returned global `{}`. The new on-disk fixture
+reproduces that path. The historical sampler did not persist caught exception
+reasons, so assigning all five historical `{}` results to it would be speculation.
+
+A successful **separate** proof is not complete sampler coverage. Proof success
+on ticks 2, 4, 8 and 11 established one RPC exclusion each, at a different instant
+from the default sampler. Only tick 4 of those had a numeric row. The trace saved
+rows and envelope timestamps, not the sampler's repository inventories, its own
+RPC proof outcome, or remaining unproved socket counts. It cannot establish
+whether other ownerless sockets remained in those observations.
+
+The exact predicate explains why this is possible without fabricating zeros:
+`empty_complete` becomes false for any unproved ownerless nonterminal socket or
+unmatched rsync/ssh/openssl holder. Repository-specific ambiguity and previously
+owned cookies losing attribution also suppress coverage. A valid state envelope
+can therefore contain no covered repository, or only an active attributed one.
+Even a complete new empty baseline is null until the next adjacent valid empty
+observation. HTTP combination still requires TCP coverage and does not turn an
+HTTP-only component into a project total. A new regression proves that one valid
+RPC exclusion **plus another unproved ownerless live socket** remains unknown.
+Nothing here claims the historical host had that second socket: the needed
+inventory was not recorded.
+
+### Scoped implementation
+
+- Production sampling allows **three total attempts**, with no sleep and one
+  absolute monotonic deadline set at entry (`start + 2s`). Both `processes` ENOENT
+  and holder-inventory ENOENT discard the entire attempt. The next attempt starts
+  from boot/process/root identity, ss, diagnostic counters, both RPC reads and
+  both holder inventories; no first diagnostic or partial holder set is reused.
+- The retry owner is `rates.sample`, not `rpc.exclusions`. A standalone exclusions
+  call still fails on incomplete inventory: it cannot safely replace the caller's
+  already acquired first diagnostic. `ObservationChurn` retains errno and marks
+  holder failures for the outer full restart, rather than being swallowed as an
+  ordinary optional-helper failure.
+- Only FileNotFoundError/ENOENT retries. Permission, parse, bounds and other I/O
+  errors do not retry into success. Missing/denied helper proof retains its
+  original independent-attribution behavior, with no exemption or fake zero.
+- A context-local deadline reaches proc checkpoints, ss selector/child wait,
+  netlink waits and each client RPC connect/send/receive timeout. None receives a
+  fresh two-second allowance per attempt. Final output is rejected if the whole
+  call exceeds the deadline. Context is restored in `finally`; flat installs and
+  injected reader signatures are unchanged.
+- This is a cooperative acquisition deadline, **not OS-level preemption** of an
+  in-flight proc syscall, an arbitrary injected reader or subprocess cleanup.
+  A late operation cannot publish a valid sample, and no following acquisition
+  starts after a checkpoint observes expiry. Hard wall-clock termination of an
+  uninterruptible syscall is not claimed. Existing external service bounds remain
+  necessary; no signal handler, background worker or new privilege was added.
+- No changes to attribution, RPC identity matching, previous-cookie invalidation,
+  first-sample nulls, adjacent-window rate calculations or aggregation. A retry
+  uses fresh counters and its actual observation timestamp, not old rates with
+  a new timestamp. Exhausted churn returns all-null rows and `{}`; recovery needs
+  two valid adjacent observations, just as before.
+
+### Local verification and remaining gate
+
+Before implementation, an actual fixture FD unlink made the required recovered
+empty baseline fail. A second RED demonstrated that an expired total budget still
+started ss. Both passed after their corresponding changes. A frozen-source
+negative control additionally ran the FD, vanished-process and deadline regressions
+against the unchanged recovery-v3 modules: all three failed as expected (no test
+errors). A final RED/GREEN closed the empty-inventory path that resumed a proc
+read after optional RPC proof exceeded the shared deadline. Other new cases are
+regression controls, not claimed as earlier RED runs.
+
+Local results:
+
+- Python discovery: **206 tests, 203 passed, 3 existing nginx-binary skips**.
+- The nine standalone HTTP test functions (not collected by unittest discovery)
+  also passed via `unittest.FunctionTestCase`; pytest is not installed locally.
+- RPC coverage file: **20 passed**, including continuous churn, permission/parse/
+  other I/O errors, second-holder failure, changed socket identity between
+  attempts, previous-owner loss, fresh counters/timestamp and remaining unknowns.
+- Real sleeping child and silent Unix SEQPACKET peer verify waits are clipped to
+  a 50ms remaining budget; netlink timeout wiring is checked separately. Existing
+  exact-2s acceptance and over-2s rejection tests still pass.
+- Browser suite: **155 passed**. Dependencies were restored from the local npm
+  cache with `npm ci --offline --ignore-scripts`. Generated-output freshness and
+  `git diff --check` passed. No browser/test acceptance threshold was changed.
+
+Logs, frozen-source negative control and final `source-manifest-v4.1.json` are in the
+private `keimirror-rpc-integration-evidence/retry-v4` directory; prior evidence is
+not overwritten. These are local fixture and regression results, **not evidence
+that normal host churn now meets operational coverage**. No remote operations,
+push or deployment were performed by this follow-up. Parent source review and a
+new exact-source canary are required before deployment. Re-run the unchanged
+fixed-tick acceptance and fresh missing-helper control against the new committed
+bytes; preserve every null and actual returned state. The new trace should record
+sanitized same-sampler coverage reasons/counts (no addresses, argv or FD paths)
+to distinguish proof loss from residual unproved sockets, rather than inferring
+that distinction from the separate diagnostic proof.

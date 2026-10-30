@@ -13,9 +13,9 @@ import uuid
 import ctypes
 
 if __package__:
-    from .rates import bounded
+    from .rates import bounded, ObservationChurn, observation_budget
 else:  # Existing /opt/keimirror-telemetry flat installation.
-    from rates import bounded
+    from rates import bounded, ObservationChurn, observation_budget
 
 ROOT_UID = 0
 SOCKET_PATH = '/run/keimirror-rpc/rpc.sock'
@@ -85,6 +85,7 @@ def validate_reply(reply, nonce, boot, netns, start, finish):
 def read_snapshot(path: str | Path = SOCKET_PATH):
     """Root-only peer authenticated, nonce-bound, no cached response."""
     start = time.monotonic()
+    observation_budget()
     path = Path(path)
     parent, node = path.parent.lstat(), path.lstat()
     if (not stat.S_ISDIR(parent.st_mode) or parent.st_uid != ROOT_UID
@@ -94,10 +95,12 @@ def read_snapshot(path: str | Path = SOCKET_PATH):
     boot, netns = identity()
     nonce = secrets.token_hex(16)
     with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as conn:
-        conn.settimeout(0.5)
+        conn.settimeout(observation_budget(0.5))
         conn.connect(str(path))
         peer = peer_identity(conn)
+        conn.settimeout(observation_budget(0.5))
         conn.sendall(nonce.encode('ascii'))
+        conn.settimeout(observation_budget(0.5))
         reply = json.loads(receive(conn, MAX_MESSAGE))
         if peer_identity(conn) != peer or identity() != (boot, netns):
             raise ValueError('RPC identity changed')
@@ -164,16 +167,27 @@ def read_transports(root):
 
 def holders(root):
     """A missing/unreadable process or FD is a coverage gap, not ownerless."""
+    try:
+        return _holders(root)
+    except FileNotFoundError as exc:
+        # The sampler must restart process/ss/diag/RPC acquisition together.
+        # A standalone proof caller still receives an OSError, never a subset.
+        raise ObservationChurn(exc.errno, 'incomplete proc inventory') from exc
+
+
+def _holders(root):
     found = set()
     count = 0
     with os.scandir(root) as entries:
         for index, entry in enumerate(entries):
+            observation_budget()
             if index >= 16384:
                 raise ValueError('process bound')
             if not entry.name.isdecimal():
                 continue
             with os.scandir(Path(entry.path)/'fd') as fds:
                 for fd in fds:
+                    observation_budget()
                     count += 1
                     if count > 131072:
                         raise ValueError('descriptor bound')
@@ -186,11 +200,17 @@ def holders(root):
 def exclusions(first, diag_reader, rpc_reader, root):
     """Two fresh RPC/diag/holder observations, bounded by sampler deadline."""
     start = time.monotonic()
+    observation_budget()
     rpc_a = rpc_reader()
+    observation_budget()
     held_a = holders(root)
+    observation_budget()
     rpc_b = rpc_reader()
+    observation_budget()
     second = diag_reader()
+    observation_budget()
     held_b = holders(root)
+    observation_budget()
     if not 0 < time.monotonic() - start <= 2:
         raise ValueError('RPC window')
     result = set()

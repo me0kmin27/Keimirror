@@ -50,6 +50,241 @@ class CoverageTests(unittest.TestCase):
                                 ss_reader=lambda: '', diag_reader=diag or (lambda: [self.diag]),
                                 rpc_reader=rpc or (lambda: self.rpc))
 
+    def unrelated_process(self):
+        directory = self.root/'77'
+        (directory/'fd').mkdir(parents=True)
+        (directory/'stat').write_text('77 (unrelated) S 0 ' + '0 '*17 + '50\n')
+        (directory/'cmdline').write_bytes(b'/usr/bin/unrelated\0')
+        (directory/'fd/4').symlink_to('/dev/null')
+        return directory
+
+    def test_disappearing_unrelated_fd_restarts_whole_observation(self):
+        directory = self.unrelated_process()
+        original = os.readlink
+        reads = []
+        def disappearing(path, *args, **kwargs):
+            if Path(path) == directory/'fd/4' and not reads:
+                reads.append(path)
+                Path(path).unlink()
+            return original(path, *args, **kwargs)
+        with mock.patch.object(os, 'readlink', side_effect=disappearing), \
+                mock.patch.object(rates, 'processes', wraps=rates.processes) as tables:
+            rows, first = self.take()
+        self.assertEqual(first.get('repositories'), {'a': {}})
+        self.assertEqual(tables.call_count, 2, 'must discard process/ss/diag/RPC pair together')
+        self.assertIsNone(rows['a']['sync_tx_bps'])
+        rows, _ = self.take(first, 101)
+        self.assertEqual(rows['a']['sync_tx_bps'], 0)
+
+    def test_retry_budget_expires_before_starting_more_acquisition(self):
+        directory = self.unrelated_process()
+        original = rates.process
+        clock = [100.0]
+        calls = []
+        def read_process(path):
+            calls.append(path)
+            clock[0] += 1.1
+            if len(calls) == 1:
+                raise FileNotFoundError(2, 'disappeared')
+            return original(path)
+        with mock.patch.object(rates.time, 'monotonic', side_effect=lambda: clock[0]), \
+                mock.patch.object(rates, 'process', side_effect=read_process), \
+                mock.patch.object(rates, 'read_ss', return_value='') as ss:
+            rows, state = rates.sample(self.config, None, now=None, proc_root=self.root,
+                                       diag_reader=lambda: [self.diag], rpc_reader=lambda: self.rpc)
+        self.assertEqual(state, {})
+        self.assertIsNone(rows['a']['sync_tx_bps'])
+        self.assertEqual(len(calls), 2)
+        ss.assert_not_called()
+
+    def test_disappearing_process_table_entry_recovers_without_skipping_pid(self):
+        import shutil
+        directory = self.unrelated_process()
+        original = rates.process
+        calls = []
+        def vanished(path):
+            calls.append(path)
+            if Path(path) == directory:
+                shutil.rmtree(directory)
+            return original(path)
+        with mock.patch.object(rates, 'process', side_effect=vanished), \
+                mock.patch.object(rates, 'processes', wraps=rates.processes) as tables:
+            rows, state = self.take()
+        self.assertEqual(tables.call_count, 2)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(state.get('repositories'), {'a': {}})
+        self.assertIsNone(rows['a']['sync_tx_bps'])
+
+    def test_continuous_churn_has_three_attempt_limit_and_resets_previous(self):
+        from telemetry import rpc
+        _, baseline = self.take()
+        directory = self.unrelated_process()
+        for stage in ('process', 'holder'):
+            with self.subTest(stage=stage):
+                target = mock.patch.object(rates, 'process', side_effect=FileNotFoundError(2, 'gone')) if stage == 'process' else mock.patch.object(rpc, '_holders', side_effect=FileNotFoundError(2, 'gone'))
+                with target as reader, mock.patch.object(rates, 'processes', wraps=rates.processes) as tables:
+                    rows, gap = self.take(baseline, 101)
+                self.assertEqual(reader.call_count, 3)
+                self.assertEqual(tables.call_count, 3)
+                self.assertEqual(gap, {})
+                self.assertTrue(all(v is None for v in rows['a'].values()))
+                rows, primed = self.take(gap, 102)
+                self.assertIsNone(rows['a']['sync_tx_bps'])
+                rows, _ = self.take(primed, 103)
+                self.assertEqual(rows['a']['sync_tx_bps'], 0)
+
+    def test_permission_parse_and_other_errors_never_retry_into_success(self):
+        from telemetry import rpc
+        self.unrelated_process()
+        for stage in ('process', 'holder'):
+            for error in (PermissionError(13, 'denied'), ValueError('parse'), OSError(5, 'io')):
+                with self.subTest(stage=stage, error=type(error).__name__):
+                    target = mock.patch.object(rates, 'process', side_effect=error) if stage == 'process' else mock.patch.object(rpc, '_holders', side_effect=error)
+                    with target as reader:
+                        rows, state = self.take()
+                    self.assertEqual(reader.call_count, 1)
+                    self.assertNotIn('a', state.get('repositories', {}))
+                    self.assertTrue(all(v is None for v in rows['a'].values()))
+
+    def test_second_holder_failure_discards_first_pair_and_changed_socket_identity(self):
+        from telemetry import rpc
+        directory = self.unrelated_process()
+        _, baseline = self.take()
+        prior = dict(baseline, repositories={'a': {'161': dict(self.diag, owners=[[10, 50, 0]])}})
+        original = rpc._holders
+        calls = []
+        def vanished(root):
+            calls.append(root)
+            if len(calls) == 2:
+                self.diag = dict(self.diag, cookie=162, ino=43)
+                raise FileNotFoundError(2, 'gone before second inventory')
+            return original(root)
+        with mock.patch.object(rpc, '_holders', side_effect=vanished), \
+                mock.patch.object(rates, 'processes', wraps=rates.processes) as tables:
+            rows, state = self.take(prior, 101)
+        self.assertEqual(len(calls), 4)
+        self.assertEqual(tables.call_count, 2)
+        self.assertEqual(state.get('repositories'), {'a': {}})
+        self.assertIsNone(rows['a']['sync_tx_bps'])
+        rows, _ = self.take(state, 102)
+        self.assertEqual(rows['a']['sync_tx_bps'], 0)
+
+    def test_previous_owner_loss_still_invalidates_after_full_retry(self):
+        from telemetry import rpc
+        _, baseline = self.take()
+        prior = dict(baseline, repositories={'a': {'161': dict(self.diag, owners=[[10, 50, 0]])}})
+        with mock.patch.object(rpc, '_holders', side_effect=[FileNotFoundError(2, 'gone'), set(), set()]):
+            rows, state = self.take(prior, 101)
+        self.assertNotIn('a', state['repositories'])
+        self.assertTrue(all(v is None for v in rows['a'].values()))
+
+    def test_successful_rpc_proof_does_not_exempt_another_ownerless_live_socket(self):
+        extra = dict(self.diag, ino=43, cookie=162, endpoint=[2, 'c0000201', 'c0000203', 901, 22])
+        _, state = self.take(diag=lambda: [self.diag, extra])
+        rows, state = self.take(state, 101, diag=lambda: [self.diag, extra])
+        self.assertEqual(state['repositories'], {})
+        self.assertTrue(all(v is None for v in rows['a'].values()))
+
+    def test_retry_publishes_only_fresh_counters_and_timestamp(self):
+        from telemetry import rpc
+        directory = self.unrelated_process()
+        (directory/'cmdline').write_bytes(b'/usr/bin/rsync\0source\0/data\0')
+        (directory/'fd/4').unlink()
+        (directory/'fd/4').symlink_to('socket:[42]')
+        (directory/'ns').mkdir()
+        (directory/'ns/net').symlink_to('net:[123]')
+        self.diag['uid'] = os.getuid()
+        clock = [100.0]
+        text = 'ESTAB 0 0 - - users:(("rsync",pid=77,fd=4)) ino:42 sk:a1'
+        def take(previous):
+            with mock.patch.object(rates.time, 'monotonic', side_effect=lambda: clock[0]), \
+                    mock.patch.object(rates.time, 'time', side_effect=lambda: 1000 + clock[0]):
+                return rates.sample(self.config, previous, now=None, proc_root=self.root,
+                                    ss_reader=lambda: text, diag_reader=lambda: [dict(self.diag)],
+                                    rpc_reader=lambda: self.rpc)
+        # Strictly positive proof duration is irrelevant to this owned socket.
+        _, previous = take(None)
+        self.diag.update(rx=100, tx=50)
+        clock[0] = 101.0
+        original = rpc._holders
+        calls = []
+        def vanished(root):
+            calls.append(root)
+            if len(calls) == 1:
+                clock[0] = 101.5
+                self.diag.update(rx=600, tx=300)
+                raise FileNotFoundError(2, 'gone')
+            return original(root)
+        with mock.patch.object(rpc, '_holders', side_effect=vanished):
+            rows, state = take(previous)
+        self.assertEqual(state['monotonic'], 101.5)
+        self.assertEqual(state['repositories']['a']['161']['rx'], 600)
+        self.assertEqual(rows['a'], dict(sync_rx_bps=400, sync_tx_bps=200, rates_observed_at=1101.5))
+
+    def test_blocking_readers_use_remaining_budget_not_new_timeouts(self):
+        import socket
+        import subprocess
+        import sys
+        import time
+        from telemetry import rpc
+        original = subprocess.Popen
+        def sleeping_ss(*args, **kwargs):
+            return original([sys.executable, '-c', 'import time; time.sleep(5)'], **kwargs)
+        start = time.monotonic()
+        token = rates._observation_deadline.set(start + .05)
+        try:
+            with mock.patch.object(rates.subprocess, 'Popen', side_effect=sleeping_ss):
+                with self.assertRaises(ValueError):
+                    rates.read_ss()
+        finally:
+            rates._observation_deadline.reset(token)
+        self.assertLess(time.monotonic() - start, .5)
+        path = self.root/'silent.sock'
+        with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as listener:
+            listener.bind(str(path))
+            path.chmod(0o600)
+            listener.listen()
+            start = time.monotonic()
+            token = rates._observation_deadline.set(start + .05)
+            try:
+                with mock.patch.object(rpc, 'ROOT_UID', os.getuid()), self.assertRaises(TimeoutError):
+                    rpc.read_snapshot(path)
+            finally:
+                rates._observation_deadline.reset(token)
+            self.assertLess(time.monotonic() - start, .3)
+        # Exercise the netlink acquisition itself, not a replacement read_diag.
+        sock = mock.MagicMock()
+        sock.__enter__.return_value = sock
+        sock.recvmsg.side_effect = TimeoutError()
+        token = rates._observation_deadline.set(time.monotonic() + .05)
+        try:
+            with mock.patch.object(socket, 'socket', return_value=sock), self.assertRaises(TimeoutError):
+                rates.read_diag()
+        finally:
+            rates._observation_deadline.reset(token)
+        self.assertTrue(sock.settimeout.call_args_list)
+        self.assertTrue(all(0 < c.args[0] <= .05 for c in sock.settimeout.call_args_list))
+        self.assertIsNone(rates._observation_deadline.get())
+
+    def test_expired_optional_rpc_proof_stops_even_an_empty_observation(self):
+        clock = [100.0]
+        original = os.readlink
+        late_reads = []
+        def readlink(path, *args, **kwargs):
+            if clock[0] > 102:
+                late_reads.append(path)
+            return original(path, *args, **kwargs)
+        def slow_rpc():
+            clock[0] = 102.1
+            return []
+        with mock.patch.object(rates.time, 'monotonic', side_effect=lambda: clock[0]), \
+                mock.patch.object(os, 'readlink', side_effect=readlink):
+            rows, state = rates.sample(self.config, None, now=None, proc_root=self.root,
+                                       ss_reader=lambda: '', diag_reader=lambda: [], rpc_reader=slow_rpc)
+        self.assertEqual(state, {})
+        self.assertEqual(late_reads, [], 'expired optional proof must abort, not resume proc reads')
+        self.assertTrue(all(v is None for v in rows['a'].values()))
+
     def test_exact_rpc_exclusion_enables_two_sample_empty_coverage_without_leaks(self):
         rows, first = self.take()
         self.assertIsNone(rows['a']['sync_tx_bps'])
