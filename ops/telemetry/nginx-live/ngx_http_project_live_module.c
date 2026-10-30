@@ -359,10 +359,28 @@ static ngx_int_t live_read_request(ngx_http_request_t *r) {
     (void)live_bind(r, 1);
     return NGX_DECLINED;
 }
+/* Only the exercised built-in errors, not arbitrary >=400 output.  A healthy
+ * q proves POST_READ counted bodyless HTTP/1 RX: late/unsupported binds always
+ * set uncertainty, which is never cleared.  Filter-finalize (notably 416) can
+ * clear module ctx; live_bind recovers the original q from the connection. */
+static ngx_uint_t live_accounted_error(ngx_http_request_t *r, live_request *q) {
+    ngx_uint_t status = r->headers_out.status;
+    live_connection *lc = q->connection;
+    return (status == NGX_HTTP_FORBIDDEN || status == NGX_HTTP_NOT_FOUND
+            || status == NGX_HTTP_RANGE_NOT_SATISFIABLE)
+        && r->err_status == status && !r->upstream && !r->error_page
+        && !r->internal && r == r->main && q->request == r && !q->uncertain
+        && live_repo(r) == (ngx_int_t)q->repo
+        && lc && lc->connection == r->connection && lc->request == q
+        && lc->send_chain && lc->send
+        && r->connection->send_chain == live_send_chain
+        && r->connection->send == live_send;
+}
 static ngx_int_t live_header(ngx_http_request_t *r) {
     live_request *q = live_bind(r, 0);
     if (q && (r->headers_out.status == NGX_HTTP_SWITCHING_PROTOCOLS
-              || r->headers_out.status >= NGX_HTTP_BAD_REQUEST || r->internal))
+              || (r->headers_out.status >= NGX_HTTP_BAD_REQUEST
+                  && !live_accounted_error(r, q)) || r->internal))
         live_uncertain(q);
     return live_next_header(r);
 }
