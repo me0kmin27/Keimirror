@@ -14,8 +14,10 @@ import ctypes
 
 if __package__:
     from .rates import bounded, ObservationChurn, observation_budget
+    from .private_reasons import Reason, emit
 else:  # Existing /opt/keimirror-telemetry flat installation.
     from rates import bounded, ObservationChurn, observation_budget
+    from private_reasons import Reason, emit
 
 ROOT_UID = 0
 SOCKET_PATH = '/run/keimirror-rpc/rpc.sock'
@@ -185,13 +187,22 @@ def _holders(root):
                 raise ValueError('process bound')
             if not entry.name.isdecimal():
                 continue
-            with os.scandir(Path(entry.path)/'fd') as fds:
+            try:
+                fds = os.scandir(Path(entry.path)/'fd')
+            except FileNotFoundError:
+                emit(Reason.TCP_HOLDER_DIR_ENOENT)
+                raise
+            with fds:
                 for fd in fds:
                     observation_budget()
                     count += 1
                     if count > 131072:
                         raise ValueError('descriptor bound')
-                    target = os.readlink(fd.path)
+                    try:
+                        target = os.readlink(fd.path)
+                    except FileNotFoundError:
+                        emit(Reason.TCP_HOLDER_LINK_ENOENT)
+                        raise
                     if target.startswith('socket:[') and target.endswith(']'):
                         found.add(int(target[8:-1]))
     return found
@@ -203,13 +214,21 @@ def exclusions(first, diag_reader, rpc_reader, root):
     observation_budget()
     rpc_a = rpc_reader()
     observation_budget()
-    held_a = holders(root)
+    try:
+        held_a = holders(root)
+    except FileNotFoundError:
+        emit(Reason.TCP_RPC_FIRST_HOLDERS_ENOENT)
+        raise
     observation_budget()
     rpc_b = rpc_reader()
     observation_budget()
     second = diag_reader()
     observation_budget()
-    held_b = holders(root)
+    try:
+        held_b = holders(root)
+    except FileNotFoundError:
+        emit(Reason.TCP_RPC_SECOND_HOLDERS_ENOENT)
+        raise
     observation_budget()
     if not 0 < time.monotonic() - start <= 2:
         raise ValueError('RPC window')

@@ -17,6 +17,11 @@ from pathlib import Path
 import stat
 import uuid
 
+if __package__:
+    from .private_reasons import Reason, emit, _callback
+else:
+    from private_reasons import Reason, emit, _callback
+
 PID_PATH = '/run/nginx.pid'
 TRUSTED_UID = 0
 SOCKET_PATH = '/run/keimirror-live/status.sock'
@@ -91,6 +96,7 @@ def decode(raw, rids, workers):
     if any(not uint(p, 2**31-1) for p in pids) or len(set(pids)) != len(pids):
         raise ValueError('invalid PID')
     if set(pids) != {p[0] for p in workers['workers']}:
+        emit(Reason.HTTP_WORKER_COVERAGE)
         raise ValueError('incomplete coverage')
     return hashlib.sha256(epoch.encode()).hexdigest(), counters(value['repositories'], rids)
 
@@ -260,16 +266,31 @@ def read_workers(proc_root, deadline):
 
 
 def sample(config, previous, *, now=None, proc_root='/proc', reader=None,
+           workers_reader=None, monotonic_now=None, diagnostic=None):
+    token = _callback.set(diagnostic)
+    try:
+        return _sample(config, previous, now=now, proc_root=proc_root, reader=reader,
+                       workers_reader=workers_reader, monotonic_now=monotonic_now)
+    finally:
+        _callback.reset(token)
+
+
+def _sample(config, previous, *, now=None, proc_root='/proc', reader=None,
            workers_reader=None, monotonic_now=None):
     """Return metric mapping and sanitized baseline; failure discards baseline."""
     rows = {rid: dict(sync_rx_bps=None, sync_tx_bps=None, rates_observed_at=None)
             for rid in config['repositories']}
+    failure = Reason.HTTP_WORKERS_FAILED
     try:
         deadline = time.monotonic() + TIMEOUT
         before = identity(workers_reader(proc_root) if workers_reader else read_workers(proc_root, deadline))
         remaining(deadline)
-        epoch, values = decode(reader() if reader else read_http(deadline), rows, before)
+        failure = Reason.HTTP_READ_FAILED
+        raw = reader() if reader else read_http(deadline)
+        failure = Reason.HTTP_DECODE_FAILED
+        epoch, values = decode(raw, rows, before)
         remaining(deadline)
+        failure = Reason.HTTP_WORKERS_FAILED
         after = identity(workers_reader(proc_root) if workers_reader else read_workers(proc_root, deadline))
         remaining(deadline)
         if before != after:
@@ -278,20 +299,34 @@ def sample(config, previous, *, now=None, proc_root='/proc', reader=None,
         observed = finite(time.time() if now is None else now)
         state = dict(epoch=epoch, identity=after, monotonic=monotonic, repositories=values)
     except (OSError, ValueError, TypeError, KeyError, OverflowError, RecursionError):
+        emit(failure)
         return rows, {}
     try:
         old = prior(previous, rows)
         dt = monotonic - old['monotonic']
         if not 0 < dt <= 2 or old['epoch'] != epoch or old['identity'] != after:
+            if not 0 < dt <= 2:
+                emit(Reason.HTTP_PAIR_WINDOW)
+            if old['epoch'] != epoch:
+                emit(Reason.HTTP_EPOCH_CHANGED)
+            if old['identity'] != after:
+                emit(Reason.HTTP_IDENTITY_CHANGED)
             return rows, state
         for rid, row in rows.items():
             a, b = old['repositories'][rid], values[rid]
             if (a['active_uncertain'] or b['active_uncertain'] or a['uncertain'] != b['uncertain']
                     or b['rx_bytes'] < a['rx_bytes'] or b['tx_bytes'] < a['tx_bytes']):
+                if a['active_uncertain'] or b['active_uncertain']:
+                    emit(Reason.HTTP_ACTIVE_UNCERTAIN, rid)
+                if a['uncertain'] != b['uncertain']:
+                    emit(Reason.HTTP_UNCERTAIN_CHANGED, rid)
+                if b['rx_bytes'] < a['rx_bytes'] or b['tx_bytes'] < a['tx_bytes']:
+                    emit(Reason.HTTP_COUNTER_RESET, rid)
                 continue
             rx, tx = (b['rx_bytes']-a['rx_bytes'])/dt, (b['tx_bytes']-a['tx_bytes'])/dt
             if math.isfinite(rx) and math.isfinite(tx):
                 row.update(sync_rx_bps=rx, sync_tx_bps=tx, rates_observed_at=observed)
     except (ValueError, TypeError, KeyError, OverflowError):
+        emit(Reason.HTTP_BASELINE)
         pass
     return rows, state

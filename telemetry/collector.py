@@ -47,10 +47,11 @@ from pathlib import Path
 from typing import Any, TypeGuard
 
 if __package__:
-    from . import rates, http_rates
+    from . import rates, http_rates, private_reasons
 else:  # Installed collector.py is also a directly executable CLI.
     import rates
     import http_rates
+    import private_reasons
 
 PROJECTS = {
     "archlinux": ["archlinux"], "gentoo": ["gentoo", "gentoo-portage"],
@@ -731,15 +732,27 @@ def collect(config, state_dir, *, now=None, proc_root: str | Path = "/proc", max
             row[source + "_bytes_60s"] = delivery[source][rid] if delivery[source] is not None else None
         row["traffic_observed_since"] = observed_since
         rows[rid] = dict(id=rid, **row)
-    sampled, private['rates'] = rates.sample(config, private.get('rates'), now=sample_now, proc_root=proc_root)
+    diagnostics = private_reasons.Recorder(REPOSITORIES)
+    sampled, private['rates'] = rates.sample(config, private.get('rates'), now=sample_now, proc_root=proc_root,
+                                           diagnostic=diagnostics.sink('tcp'))
     http_sampled, private['http_rates'] = http_rates.sample(
-        config, private.get('http_rates'), now=sample_now, proc_root=str(proc_root))
+        config, private.get('http_rates'), now=sample_now, proc_root=str(proc_root), diagnostic=diagnostics.sink('http'))
     for rid, row in rows.items():
         row.update(combine_transfer_rates(sampled.get(rid), http_sampled.get(rid)))
+        for values, reason in ((sampled, private_reasons.Reason.COMBINED_TCP_NULL),
+                               (http_sampled, private_reasons.Reason.COMBINED_HTTP_NULL)):
+            value = values.get(rid)
+            if not isinstance(value, dict) or value.get('sync_rx_bps') is None or value.get('sync_tx_bps') is None:
+                diagnostics.add('combined', reason, rid)
     private["logs"] = {rid: logs.get(rid) for rid in REPOSITORIES}
     private["active"] = {rid: value for rid, value in seen_active.items() if rid in REPOSITORIES and timestamp(value, now)}
     private["success"] = {rid: row["last_success_at"] for rid, row in rows.items()}
     atomic_json(state_dir / "collector.json", private)
+    try:
+        atomic_json(state_dir / 'diagnostics.json', diagnostics.snapshot(now, private['rates'], private['http_rates']))
+    except (OSError, ValueError, TypeError, OverflowError):
+        # Sidecar is best effort and is never a source of rate validity.
+        pass
     return {
         "schema_version": 1, "mirror_id": config["mirror_id"], "collected_at": now,
         "interval_seconds": 1,
@@ -750,8 +763,7 @@ def collect(config, state_dir, *, now=None, proc_root: str | Path = "/proc", max
 TICK_TIMEOUT = 10
 
 
-class CollectionDeadline(Exception):
-    """Not an OSError: evidence error handlers must not swallow the deadline."""
+CollectionDeadline = private_reasons.CollectionDeadline
 
 
 def expire_tick(signum, frame):
