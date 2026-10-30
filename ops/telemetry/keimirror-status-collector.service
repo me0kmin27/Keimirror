@@ -12,6 +12,7 @@ ExecStart=/usr/bin/python3 -B /opt/keimirror-telemetry/collector.py --config /et
 TimeoutStartSec=12s
 CPUQuota=100%
 MemoryMax=256M
+LimitCORE=0
 PrivateTmp=no
 ReadOnlyPaths=/tmp /var/tmp
 RestrictAddressFamilies=AF_UNIX AF_NETLINK
