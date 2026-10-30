@@ -136,14 +136,14 @@ class HarnessProvenance(unittest.TestCase):
 
     def test_committed_reader_pins_match_same_approved_sources(self):
         for name in ('http_rates.py', 'private_reasons.py'):
-            self.assertEqual(staging.digest((SOURCE.parents[2] / 'telemetry' / name).read_bytes()), staging.ARTIFACTS['reader/' + name])
+            self.assertEqual(staging.digest((SOURCE / 'reader' / name).read_bytes()), staging.ARTIFACTS['reader/' + name])
 
     def test_manifest_covers_all_root_python_and_transitive_local_imports(self):
         files = json.loads((SOURCE / 'root-staging-manifest.json').read_text())['files']
         self.assertEqual({p.name for p in SOURCE.glob('*.py')}, {n for n in files if n.endswith('.py') and '/' not in n})
         local = {Path(n).stem for n in files if n.endswith('.py')}
         for name, expected in files.items():
-            path = SOURCE.parents[2] / 'telemetry' / Path(name).name if name.startswith('reader/') else SOURCE / name
+            path = SOURCE / name
             self.assertEqual(staging.digest(path.read_bytes()), expected, name)
             if name.endswith('.py'):
                 for node in ast.walk(ast.parse(path.read_text())):
@@ -157,7 +157,7 @@ class HarnessProvenance(unittest.TestCase):
             base = Path(td); source = base / 'source'; source.mkdir(); (source / 'reader').mkdir()
             manifest = json.loads((SOURCE / 'root-staging-manifest.json').read_text())
             for name in manifest['files']:
-                path = SOURCE.parents[2] / 'telemetry' / Path(name).name if name.startswith('reader/') else SOURCE / name
+                path = SOURCE / name
                 shutil.copyfile(path, source / name)
             shutil.copyfile(SOURCE / 'root-staging-manifest.json', source / 'root-staging-manifest.json')
             artifacts = base / 'artifacts'; artifacts.mkdir(); (artifacts / 'reader').mkdir()

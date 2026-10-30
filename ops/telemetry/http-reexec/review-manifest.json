@@ -12,9 +12,9 @@
   "support_files": {
     "ops/telemetry/http-reexec/README.md": "545663775ae53b161e5fb2340833c09e7198f66be597261b0e8d7105454cd1ae",
     "ops/telemetry/http-reexec/host-baselines.json": "23b8f68a022f5378d0a6c6be02b1500390182d34509b75e93bb2ce737d7efd71",
-    "telemetry/http_rates.py": "9b85d1cf82abec9124834c71139f9b8b514bed29dddf4c21bd26b213c1523386",
-    "telemetry/private_reasons.py": "0b99330982235456c72fb45f9c46d81c08f640e673e50eece5aa72081647675b",
-    "ops/telemetry/http-reexec/ROOTSTAGING.md": "377d923d785b25323a3c56b3d55b570f69cfd3152463fa06d2af004afbe07245"
+    "ops/telemetry/http-reexec/ROOTSTAGING.md": "8023e56af60e6d0c634f97cb5a3f48eb19fb15450f3b33374ff48abb810558cd",
+    "ops/telemetry/http-reexec/reader/http_rates.py": "9b85d1cf82abec9124834c71139f9b8b514bed29dddf4c21bd26b213c1523386",
+    "ops/telemetry/http-reexec/reader/private_reasons.py": "0b99330982235456c72fb45f9c46d81c08f640e673e50eece5aa72081647675b"
   },
   "files": {
     "ops/telemetry/http-reexec/transaction.py": "007c171e31d97fcf18921fd58b5a3ade6bb3954d2d986478c5378ca025aeb721",
@@ -25,7 +25,7 @@
     "ops/telemetry/http-reexec/host-readonly-configs.json": "349f9be9512c89efbb21808a3b6cc895c0607cb9a34416a2486e8c2aadf6f539",
     "ops/telemetry/http-reexec/root_stage.py": "ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f",
     "ops/telemetry/http-reexec/root-staging-manifest.json": "11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415",
-    "tests/test_harness_provenance.py": "5ff4cc0688a524dddedc06ef892539013c598b8aa28f7300b81604dac7dc86f7"
+    "tests/test_harness_provenance.py": "4b216dd50c4ab6664e1cd1ff0668487b23355776b62c9e1019b1b5c23b41c237"
   },
   "independent_review": "Prior transaction review: no blocker; harness provenance fix requires parent delta review. No merge or deployment authorized.",
   "private_inventory_hashes": {

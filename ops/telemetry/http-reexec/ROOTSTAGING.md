@@ -28,7 +28,10 @@ and both approved reader modules. Every copied byte is checked, in a newly
 created root:root 0700 stage beneath trusted /var/lib. Symlink ancestors,
 nonregular inputs, hardlinks and oversized inputs fail closed. Only explicit
 pinned files are copied to fresh inodes. Both reader modules come from the same
-approved repository sources. An artifact-side manifest cannot authorize itself.
+approved repository sources, retained byte-for-byte in this directory's reader/
+snapshot from candidate 3b600a42030a3a8090ef944c2d565210fbcc871c. These
+reviewed pins do not follow unrelated telemetry changes on the PR merge base.
+An artifact-side manifest cannot authorize itself.
 
 Runtime verifies the entire root source and artifact closure before importing
 isolated; the harness verifies its fresh private artifact copies before loading
@@ -92,7 +95,7 @@ if hashlib.sha256(data).hexdigest() != expected:
 sys.argv = [script] + sys.argv[3:]
 __file__ = script
 exec(compile(data, script, "exec"), globals())
-' /home/me0kmin27/.hermes/cache/scratch/pr45-provenance-frozen-11b065c6761e/source/root_stage.py ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f stage /var/lib/keimirror-pr45-11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415 11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415 --source /home/me0kmin27/.hermes/cache/scratch/pr45-provenance-frozen-11b065c6761e/source --artifacts /home/me0kmin27/.hermes/cache/scratch/pr45-provenance-frozen-11b065c6761e/artifacts
+' /home/me0kmin27/.hermes/cache/scratch/pr45-provenance-frozen-11b065c6761e-v2/source/root_stage.py ef37b412d817a335ac33dfbbecbce69217062b9acac3b847012761db9a2f176f stage /var/lib/keimirror-pr45-11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415 11b065c6761eec6fb66238f61bc057902247686d9297c52a2a5efb7492acd415 --source /home/me0kmin27/.hermes/cache/scratch/pr45-provenance-frozen-11b065c6761e-v2/source --artifacts /home/me0kmin27/.hermes/cache/scratch/pr45-provenance-frozen-11b065c6761e-v2/artifacts
 ```
 
 ## FORWARD
