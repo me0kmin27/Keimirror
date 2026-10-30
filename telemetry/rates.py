@@ -34,6 +34,11 @@ import subprocess
 import time
 import uuid
 
+if __package__:
+    from .private_reasons import Reason, emit, _callback
+else:
+    from private_reasons import Reason, emit, _callback
+
 MAX_OUTPUT = 2 * 1024 * 1024
 MAX_PROCESSES = 16384
 MAX_SOCKETS = 4096
@@ -54,6 +59,7 @@ def observation_budget(limit: float = MAX_SAMPLE_SECONDS):
         return limit
     remaining = deadline - time.monotonic()
     if remaining < 0:
+        emit(Reason.TCP_DEADLINE)
         raise ValueError('observation deadline')
     return min(limit, remaining)
 
@@ -96,8 +102,15 @@ def read_ss():
 
 def bounded(path, limit):
     observation_budget()
-    with Path(path).open('rb') as stream:
-        data = stream.read(limit + 1)
+    try:
+        with Path(path).open('rb') as stream:
+            data = stream.read(limit + 1)
+    except FileNotFoundError:
+        if Path(path).name == 'stat':
+            emit(Reason.TCP_PROC_STAT_ENOENT)
+        elif Path(path).name == 'cmdline':
+            emit(Reason.TCP_PROC_CMDLINE_ENOENT)
+        raise
     observation_budget()
     if len(data) > limit:
         raise ValueError('proc bound')
@@ -364,7 +377,8 @@ MAX_OBSERVATION_ATTEMPTS = 3
 
 
 def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=None,
-           rsync_config: str | Path = '/etc/rsyncd.conf', diag_reader=None, rpc_reader=None):
+           rsync_config: str | Path = '/etc/rsyncd.conf', diag_reader=None, rpc_reader=None,
+           diagnostic=None):
     """Acquire a complete observation; retry ENOENT, never partial inventories.
 
     All attempts share one absolute two-second deadline. An incomplete attempt
@@ -374,22 +388,29 @@ def sample(config, previous, *, now, proc_root: str | Path = '/proc', ss_reader=
     direct = ss_reader is None or diag_reader is not None
     started = time.monotonic() if direct else 0.0
     token = _observation_deadline.set(started + MAX_SAMPLE_SECONDS if direct else None)
+    diagnostic_token = _callback.set(diagnostic)
     try:
         for attempt in range(MAX_OBSERVATION_ATTEMPTS if direct else 1):
             if direct and time.monotonic() - started >= MAX_SAMPLE_SECONDS:
+                emit(Reason.TCP_DEADLINE)
                 break
             try:
+                emit(Reason.TCP_ATTEMPT)
                 result = _sample(config, previous, now=now, proc_root=proc_root,
                                  ss_reader=ss_reader, rsync_config=rsync_config,
                                  diag_reader=diag_reader, rpc_reader=rpc_reader,
                                  started=started)
                 if direct and time.monotonic() - started > MAX_SAMPLE_SECONDS:
+                    emit(Reason.TCP_DEADLINE)
                     break
                 return result
             except FileNotFoundError:
                 # Never skip the vanished PID/FD or keep earlier socket/RPC data.
+                if attempt == (MAX_OBSERVATION_ATTEMPTS if direct else 1) - 1:
+                    emit(Reason.TCP_RETRY_EXHAUSTED)
                 continue
     finally:
+        _callback.reset(diagnostic_token)
         _observation_deadline.reset(token)
     return ({rid: dict(sync_rx_bps=None, sync_tx_bps=None, rates_observed_at=None)
              for rid in config['repositories']}, {})
@@ -428,21 +449,29 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
             for rid in config['repositories']}
     root = Path(proc_root)
     direct = ss_reader is None or diag_reader is not None
+    enoent = Reason.TCP_OTHER_ENOENT
     try:
         boot = uuid.UUID(bounded(root/'sys/kernel/random/boot_id', 128).decode().strip()).int
+        enoent = Reason.TCP_PROCESS_TABLE_ENOENT
         table = processes(root)
+        enoent = Reason.TCP_OTHER_ENOENT
         jobs = [(rid, j['script'], pwd.getpwnam(j['user']).pw_uid,
                  {os.path.normpath(j['path']), os.path.realpath(j['path'])})
                 for rid, j in config['repositories'].items()]
         roots_before = {pid: root_identity(root/str(pid)) for pid, item in table.items()
                         if item[3] and os.path.basename(item[3][0]) == 'rsync'}
         observation_budget()
+        enoent = Reason.TCP_SS_ENOENT
         records = parse_ss((ss_reader or read_ss)())
+        enoent = Reason.TCP_OTHER_ENOENT
         observation_budget()
         namespace = None
         rpc_excluded = set()
+        by_key = {}
         if direct:
+            enoent = Reason.TCP_NAMESPACE_ENOENT
             namespace = os.readlink(root/'self/ns/net')
+            enoent = Reason.TCP_OTHER_ENOENT
             if __package__:
                 from . import rpc
             else:
@@ -451,7 +480,9 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                 rpc_reader = rpc.read_snapshot
                 rpc.protect_memory()
             diagnostic_reader = diag_reader or (lambda: read_diag(endpoints=rpc_reader is not None))
+            enoent = Reason.TCP_DIAG_ENOENT
             diagnostics = diagnostic_reader()
+            enoent = Reason.TCP_OTHER_ENOENT
             observation_budget()
             if rpc_reader is not None:
                 try:
@@ -459,6 +490,7 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                 except ObservationChurn:
                     raise
                 except (OSError, ValueError, KeyError, UnicodeError, TypeError):
+                    emit(Reason.TCP_RPC_UNAVAILABLE)
                     # Missing proof cannot exempt an ownerless socket, but does
                     # not destroy independently verified rsync attribution.
                     # An expired shared deadline is not an optional proof loss.
@@ -517,6 +549,12 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                           (int(rpc_identity[0][0]), int(rpc_identity[1][0], 16)) in rpc_excluded)
             if not pids and not proved_rpc and not record.startswith(('TIME-WAIT ', 'FIN-WAIT-1 ', 'FIN-WAIT-2 ')):
                 empty_complete = False
+                emit(Reason.TCP_OWNERLESS)
+                emit(Reason.TCP_OWNERLESS_ESTABLISHED if record.startswith('ESTAB ') else Reason.TCP_OWNERLESS_OTHER_STATE)
+                item = (by_key.get((int(rpc_identity[0][0]), int(rpc_identity[1][0], 16)))
+                        if direct and all(len(x) == 1 for x in rpc_identity) else None)
+                emit(Reason.TCP_OWNERLESS_UID_UNKNOWN if item is None else
+                     Reason.TCP_OWNERLESS_ROOT if item['uid'] == 0 else Reason.TCP_OWNERLESS_NONROOT)
             owners, identities = set(), []
             unattributed = False
             socket_uids = re.findall(r'\buid:(\d+)\b', record)
@@ -538,8 +576,10 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                 if not serving and socket_uids and (len(socket_uids) != 1 or int(socket_uids[0]) != table[pid][2]):
                     unattributed = True
                 if not matches and table[pid][3] and os.path.basename(table[pid][3][0]) in ('rsync', 'rsync-ssl', 'openssl', 'ssh'):
+                    emit(Reason.TCP_UNCLASSIFIED_TRANSPORT)
                     empty_complete = False
                 if direct and matches:
+                    enoent = Reason.TCP_OWNER_FD_ENOENT
                     inodes = re.findall(r'\bino:(\d+)\b', record)
                     fds = re.findall(r'pid=' + str(pid) + r',fd=(\d+)', record)
                     if len(inodes) != 1 or not fds or os.readlink(root/str(pid)/'ns/net') != namespace:
@@ -551,6 +591,7 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                             if os.readlink(path) != target:
                                 unattributed = True
                             held.append((pid, path, target))
+                    enoent = Reason.TCP_OTHER_ENOENT
                 owners.update(matches)
                 identities.extend(chain)
             if len(owners) != 1 or unattributed:
@@ -587,20 +628,31 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
         if isinstance(previous, dict) and previous.get('boot') == boot:
             prior_repos = previous.get('repositories')
             if isinstance(prior_repos, dict):
+                for rid, prior in prior_repos.items():
+                    if isinstance(prior, dict) and uncertain_cookies.intersection(prior):
+                        emit(Reason.TCP_LOST_ATTRIBUTED_COOKIE, rid)
                 invalid.update(rid for rid, prior in prior_repos.items()
                                if isinstance(prior, dict) and uncertain_cookies.intersection(prior))
+        enoent = Reason.TCP_HOLDER_VERIFY_ENOENT
         for pid, path, target in held:
             observation_budget()
             if os.readlink(path) != target or os.readlink(root/str(pid)/'ns/net') != namespace:
                 raise ValueError('socket holder changed')
-        if direct and (os.readlink(root/'self/ns/net') != namespace or time.monotonic()-started > MAX_SAMPLE_SECONDS):
+        enoent = Reason.TCP_NAMESPACE_ENOENT
+        if direct and os.readlink(root/'self/ns/net') != namespace:
+            emit(Reason.TCP_NAMESPACE_CHANGED)
             raise ValueError('sampling window or namespace changed')
+        if direct and time.monotonic()-started > MAX_SAMPLE_SECONDS:
+            emit(Reason.TCP_DEADLINE)
+            raise ValueError('sampling window or namespace changed')
+        enoent = Reason.TCP_OTHER_ENOENT
         for pid, record, matches, chain in deliveries:
             if roots_before[pid] != root_identity(root/str(pid)) or delivery(pid, table, jobs, root, record, rsync_config) != (matches, chain):
                 raise ValueError('delivery changed during sampling')
         for pid in checked:
             current_process = process(root/str(pid))
             if current_process[:4] != table[pid][:4] or current_process[4] in ('Z', 'X', 'x'):
+                emit(Reason.TCP_OWNERSHIP_CHANGED)
                 raise ValueError('ownership changed during sampling')
         if uuid.UUID(bounded(root/'sys/kernel/random/boot_id', 128).decode().strip()).int != boot:
             raise ValueError('boot changed')
@@ -610,9 +662,11 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                  'netns': int(namespace[5:-1]) if namespace else None, 'direct': direct,
                  'repositories': {r: s for r, s in sockets.items() if (s or empty_complete) and r not in invalid}}
         if not isinstance(previous, dict) or previous.get('boot') != boot or previous.get('version') != 2 or previous.get('direct') != direct or previous.get('netns') != state['netns']:
+            emit(Reason.TCP_BASELINE)
             return rows, state
         old_at = previous.get('monotonic')
         if not isinstance(old_at, (int, float)) or isinstance(old_at, bool) or not 0 <= old_at <= MAX_COUNTER or not math.isfinite(old_at) or not 0 < monotonic-old_at <= MAX_SAMPLE_SECONDS:
+            emit(Reason.TCP_PAIR_WINDOW)
             return rows, state
         dt = monotonic-old_at
         old_repos = previous.get('repositories')
@@ -621,12 +675,14 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
         for rid, current in state['repositories'].items():
             old = old_repos.get(rid)
             if not isinstance(old, dict) or set(old) != set(current):
+                emit(Reason.TCP_SOCKET_SET_CHANGED, rid)
                 continue
             rx = tx = 0
             for key, item in current.items():
                 prior = old[key]
                 if (not isinstance(prior, dict) or any(prior.get(k) != item[k] for k in ('cookie', 'ino', 'owners'))
                         or any(type(prior.get(k)) is not int or not 0 <= prior[k] <= item[k] for k in ('rx', 'tx'))):
+                    emit(Reason.TCP_COUNTER_OR_IDENTITY, rid)
                     break
                 rx += item['rx']-prior['rx']
                 tx += item['tx']-prior['tx']
@@ -636,6 +692,8 @@ def _sample(config, previous, *, now, proc_root, ss_reader,
                     rows[rid].update(sync_rx_bps=rates[0], sync_tx_bps=rates[1], rates_observed_at=now)
         return rows, state
     except FileNotFoundError:
+        emit(enoent)
         raise
     except (OSError, ValueError, UnicodeError, IndexError, KeyError, configparser.Error, subprocess.SubprocessError):
+        emit(Reason.TCP_OBSERVATION_FAILED)
         return rows, {}

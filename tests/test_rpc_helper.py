@@ -81,10 +81,10 @@ class HelperTests(unittest.TestCase):
         import sys
         with tempfile.TemporaryDirectory(dir=os.environ.get('TMPDIR')) as name:
             source = Path(__file__).resolve().parents[1]/'telemetry'
-            for filename in ('rates.py', 'rpc.py', 'rpc_helper.py'):
+            for filename in ('rates.py', 'rpc.py', 'rpc_helper.py', 'private_reasons.py', 'collector.py', 'http_rates.py'):
                 shutil.copyfile(source/filename, Path(name)/filename)
             result = subprocess.run([sys.executable, '-E', '-s', '-c',
-                                     'import rpc, rpc_helper; assert rpc.identity()[1].startswith("net:[")'],
+                                     'import rpc, rpc_helper, collector, http_rates, private_reasons; assert rpc.identity()[1].startswith("net:[")'],
                                     cwd=name, capture_output=True, timeout=5)
             self.assertEqual(result.returncode, 0, result.stderr.decode())
 
