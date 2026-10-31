@@ -216,6 +216,8 @@ def config_inventory(config, allowlist=None, links=None):
         if tokens:
             raise ValueError('unterminated configuration')
     visit(config)
+    if any(d[0] == 'load_module' and any('nchan' in x.lower() for x in d[1:]) for d in directives):
+        raise ValueError('Nchan full-phase rollback unsupported; production re-exec blocked')
     if any(d[0] == 'listen' and ('quic' in d or 'http3' in d) for d in directives):
         raise ValueError('QUIC listeners unsupported: quic_bpf migration proof required')
     if any(d[0] == 'worker_shutdown_timeout' and d[1:] not in (['0'], ['0s'], ['0ms']) for d in directives):
@@ -287,6 +289,19 @@ def process(pid):
                 exe=os.readlink(root / 'exe'))
 
 
+def rollback_compatibility(master):
+    """Reject even renamed/static Nchan; no full-phase support is approved."""
+    paths = set()
+    for row in read(f'/proc/{master[0]}/maps').decode().splitlines():
+        fields = row.split(maxsplit=5)
+        if len(fields) == 6 and 'x' in fields[1] and fields[5].startswith('/'):
+            paths.add(fields[5])
+    for path in sorted(paths):
+        payload = read(trusted(Path(path).resolve(strict=True)), 64 * 1024 * 1024)
+        if b'nchan_store_init_worker' in payload or b'ngx_nchan_module' in payload:
+            raise ValueError('Nchan full-phase rollback unsupported; production re-exec blocked')
+
+
 def mapping_matches(pid, path, sha):
     s = Path(path).stat()
     if digest(read(path)) != sha:
@@ -351,9 +366,12 @@ class Transaction:
             self.b.adopted(self.j['new'])
             self.b.finish()
             self.mark('committed')
-        except Exception:
+        except Exception as primary:
             if self.j['phase'] != 'commit-intent':
-                self.rollback()
+                try:
+                    self.rollback()
+                except Exception as recovery:
+                    raise primary from recovery
             raise
 
     def rollback(self):
@@ -363,20 +381,30 @@ class Transaction:
             return
         signaled = self.j['phase'] not in ('prepared', 'install-intent', 'restore-files-intent')
         resumed_quit = self.j['phase'] == 'new-quit-intent'
+        resumed_hup = self.j['phase'] == 'old-hup-intent'
+        if signaled and 'rollback_strategy' not in self.j:
+            self.j['rollback_strategy'] = ('original' if self.j['phase'] in
+                ('usr2-intent', 'new-discovered') else 'drained')
         self.b.phase('recovery')
         if signaled and self.j['new'] is None:
             self.j['new'] = self.b.discover_optional()
             if self.j['new'] is None:
                 raise ValueError('ambiguous USR2 intent without published new master; preserve generations for reconciliation')
-        if not resumed_quit:
+        if not resumed_quit and not resumed_hup:
             self.mark('restore-intent' if signaled else 'restore-files-intent')
         self.b.restore()
         self.b.syntax()
         if signaled:
-            if not resumed_quit:
-                self.mark('old-hup-intent')
-                self.b.signal(self.j['old'], 'HUP')
-            self.b.ready(self.j['old'])
+            if self.j['rollback_strategy'] == 'original':
+                self.b.original_ready()
+            else:
+                if not resumed_quit and not resumed_hup:
+                    # Never refill process slots while even one old worker remains.
+                    # A long-lived client exhausts the SAME recovery budget safely.
+                    self.b.drain(self.j['old'])
+                    self.mark('old-hup-intent')
+                    self.b.signal(self.j['old'], 'HUP')
+                self.b.ready(self.j['old'])
             if self.j['new'] is not None:
                 self.mark('new-quit-intent')
                 self.b.signal(self.j['new'], 'QUIT')
@@ -413,12 +441,59 @@ def packages():
     return digest(command(['dpkg-query', '-W', '-f=${binary:Package}\t${Version}\t${db:Status-Abbrev}\n']))
 
 
+class PIDPublicationPending(Exception):
+    """Only an observed, bounded PID-file publication transition is retryable."""
+
+
+def published_pid(path):
+    # Do not weaken read() for immutable configuration or process evidence.
+    trusted(Path(path).parent)
+    try:
+        trusted(path)
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    except FileNotFoundError as exc:
+        raise PIDPublicationPending('pidfile not yet published') from exc
+    try:
+        before = os.fstat(fd)
+        def safe(s):
+            if (not stat.S_ISREG(s.st_mode) or s.st_uid or s.st_gid or
+                    s.st_mode & 0o022 or s.st_nlink != 1 or s.st_size > 32):
+                raise ValueError('unsafe bounded root pidfile')
+        safe(before)
+        raw = os.read(fd, 33)
+        after = os.fstat(fd)
+        safe(after)
+        if len(raw) > 32:
+            raise ValueError('pidfile bound exceeded')
+        try:
+            current = os.lstat(path)
+        except FileNotFoundError as exc:
+            raise PIDPublicationPending('pidfile rename in flight') from exc
+        if not stat.S_ISREG(current.st_mode):
+            raise ValueError('pidfile replaced by nonregular file')
+        fields = ('st_dev', 'st_ino', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
+        if any(getattr(before, k) != getattr(after, k) or
+               getattr(after, k) != getattr(current, k) for k in fields):
+            raise PIDPublicationPending('pidfile publication changed')
+        if not raw:
+            raise PIDPublicationPending('pidfile writer has not published bytes')
+        if not re.fullmatch(rb'[1-9][0-9]{0,9}\n?', raw):
+            raise ValueError('invalid pidfile')
+        return int(raw)
+    finally:
+        os.close(fd)
+
+
 def pidfile(path):
     trusted(path)
     raw = read(path, 32).strip()
     if not re.fullmatch(rb'[1-9][0-9]{0,9}', raw):
         raise ValueError('invalid pidfile')
     return int(raw)
+
+
+class ProcessSnapshotChurn(Exception):
+    """Observed child disappearance or inventory transition, never validation failure."""
 
 
 def children(master):
@@ -428,16 +503,33 @@ def children(master):
     path = f'/proc/{master[0]}/task/{master[0]}/children'
     pids = read(path, 16384).split()
     workers = []
+    observed = []
     for raw in pids:
-        p = process(int(raw))
+        if not re.fullmatch(rb'[1-9][0-9]{0,9}', raw):
+            raise ValueError('invalid child PID')
+        try:
+            p = process(int(raw))
+        except (FileNotFoundError, ProcessLookupError) as exc:
+            raise ProcessSnapshotChurn('child vanished during inventory') from exc
+        observed.append(p)
         if p['parent'] != master[0] or p['exe'] != first['exe'] or p['cgroup'] != first['cgroup']:
             raise ValueError('child ancestry mismatch')
         if p['title'] in ('nginx: worker process', 'nginx: worker process is shutting down'):
             workers.append(p['identity'])
         elif p['title'] not in ('nginx: cache manager process', 'nginx: cache loader process') and not p['title'].startswith('nginx: master process '):
             raise ValueError('unknown child role')
-    if pids != read(path, 16384).split() or process(master[0]) != first:
-        raise ValueError('child inventory changed')
+    for p in observed:
+        try:
+            current = process(p['identity'][0])
+        except (FileNotFoundError, ProcessLookupError) as exc:
+            raise ProcessSnapshotChurn('child vanished during inventory') from exc
+        if any(current[k] != p[k] for k in ('identity', 'parent', 'exe', 'cgroup')):
+            raise ValueError('child identity/ancestry changed')
+    final_pids = read(path, 16384).split()
+    if process(master[0]) != first:
+        raise ValueError('master identity changed')
+    if pids != final_pids:
+        raise ProcessSnapshotChurn('child inventory changed')
     return sorted(workers)
 
 
@@ -553,6 +645,7 @@ def prepare(spec, stage):
         raise ValueError('unrecognized old master')
     if spec['old_module'] not in read(f'/proc/{old["identity"][0]}/maps').decode():
         raise ValueError('old mapping missing')
+    rollback_compatibility(old['identity'])
     workers = children(old['identity'])
     if len(workers) != spec['workers']:
         raise ValueError('worker baseline mismatch')
@@ -632,14 +725,15 @@ class Linux:
     def remaining(self):
         return self.clock.remaining()
 
-    def wait(self, predicate):
+    def wait(self, predicate, retry=(FileNotFoundError, ProcessLookupError, ConnectionRefusedError)):
         while True:
             self.remaining()
             try:
                 value = predicate()
                 if value:
+                    self.remaining()
                     return value
-            except (FileNotFoundError, ProcessLookupError, ConnectionRefusedError):
+            except retry:
                 pass
             time.sleep(min(.1, self.remaining()))
 
@@ -669,6 +763,7 @@ class Linux:
             raise ValueError('loadconf drift outside transaction')
 
     def preflight(self):
+        rollback_compatibility(self.old)
         self.verify_configs()
         self.verify_backups()
         if config_inventory(self.s['config']) != self.m['files'] or process(self.old[0]) != self.m['old'] or children(self.old) != self.m['workers'] or listeners(self.old[0]) != self.m['listeners']:
@@ -713,24 +808,38 @@ class Linux:
         signal_identity(who, name)
 
     def discover_optional(self):
-        pid = pidfile(self.s['pid'])
+        return self.acquire_publication(optional=True)
+
+    def publication_once(self):
+        pid = published_pid(self.s['pid'])
         if pid == self.old[0]:
-            # Before/failed USR2: a child master or oldbin is ambiguous, not absent.
-            if Path(self.s['pid'] + '.oldbin').exists():
-                return self.discover()
-            for token in read(f'/proc/{pid}/task/{pid}/children').split():
-                if process(int(token))['title'].startswith('nginx: master process '):
-                    raise ValueError('unpublished new master; preserve both for operator reconciliation')
-            return None
+            return None  # Ambiguous, never authorization to repeat USR2.
         p = process(pid)
-        if pidfile(self.s['pid'] + '.oldbin') != self.old[0] or p['parent'] != self.old[0] or p['identity'][1] < self.old[1] or p['cgroup'] != self.m['old']['cgroup'] or p['exe'] != self.s['binary'] or p['uid'] or not p['title'].startswith('nginx: master process '):
+        if published_pid(self.s['pid'] + '.oldbin') != self.old[0] or p['parent'] != self.old[0] or p['identity'][1] < self.old[1] or p['cgroup'] != self.m['old']['cgroup'] or p['exe'] != self.s['binary'] or p['uid'] or not p['title'].startswith('nginx: master process '):
             raise ValueError('new master identity/lineage mismatch')
         if process(self.old[0])['identity'] != self.old:
             raise ValueError('old master reused')
+        if published_pid(self.s['pid']) != pid or published_pid(self.s['pid'] + '.oldbin') != self.old[0]:
+            raise PIDPublicationPending('PID pair changed during acquisition')
+        if process(pid) != p:
+            raise ValueError('new master changed during acquisition')
         return p['identity']
 
+    def acquire_publication(self, optional=False):
+        # Same existing workers/recovery deadline; no phase reset or signal here.
+        while True:
+            self.remaining()
+            try:
+                value = self.publication_once()
+                if value is not None or optional:
+                    self.remaining()
+                    return value
+            except PIDPublicationPending:
+                pass
+            time.sleep(min(.1, self.remaining()))
+
     def discover(self):
-        return self.wait(lambda: self.discover_optional() if pidfile(self.s['pid']) != self.old[0] else None)
+        return self.acquire_publication()
 
     def ready(self, who):
         expected = self.s['old_module'] if who == self.old else self.s['new_module']
@@ -750,10 +859,35 @@ class Linux:
             if listeners(who[0]) != self.m['listeners']:
                 raise ValueError('listener inheritance mismatch')
             for worker in workers:
-                if process(worker[0])['title'] != 'nginx: worker process' or not set(self.m['listeners']) <= sockets(worker[0]):
+                try:
+                    p = process(worker[0])
+                    held = sockets(worker[0])
+                except (FileNotFoundError, ProcessLookupError) as exc:
+                    raise ProcessSnapshotChurn('worker vanished during readiness') from exc
+                if (p['identity'] != worker or p['parent'] != who[0] or
+                        p['exe'] != self.s['binary'] or p['cgroup'] != self.m['old']['cgroup']):
+                    raise ValueError('worker identity/ancestry changed')
+                if p['title'] != 'nginx: worker process' or not set(self.m['listeners']) <= held:
                     return False
             return True
-        return self.wait(check)
+        return self.wait(check, retry=(ProcessSnapshotChurn,))
+
+    def original_ready(self):
+        """Pre-WINCH only: no replacement generation may satisfy this proof."""
+        def unchanged():
+            self.remaining()
+            if process(self.old[0]) != self.m['old'] or children(self.old) != self.m['workers']:
+                raise ValueError('original workers changed; retain new generation')
+            for worker in self.m['workers']:
+                p = process(worker[0])
+                if (p['identity'] != worker or p['parent'] != self.old[0] or
+                        p['exe'] != self.s['binary'] or p['cgroup'] != self.m['old']['cgroup'] or
+                        p['title'] != 'nginx: worker process' or
+                        not set(self.m['listeners']) <= sockets(worker[0])):
+                    raise ValueError('original workers not healthy/listening')
+        unchanged()
+        self.ready(self.old)
+        unchanged()
 
     def accept(self):
         def sample():
@@ -783,7 +917,7 @@ class Linux:
             if p['identity'] != who:
                 raise ValueError('PID reused during drain; never signal it')
             return not children(who)
-        self.wait(check)
+        self.wait(check, retry=(ProcessSnapshotChurn,))
 
     def adopted(self, who):
         def check():

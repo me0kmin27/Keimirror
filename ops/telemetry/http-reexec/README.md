@@ -1,10 +1,43 @@
 # HTTP module re-exec transaction — DRAFT / DO NOT DEPLOY
 
-This is an **unvalidated operational candidate**, not a completed production
-release. No production signal, file replacement, package action, unit change,
-restart, or deployment was performed for this PR.
+## Incident fix: rollout remains blocked
 
-## Blocking gates
+PR45 merged as `27269689baa4ea664c4322bfdf8ecbf244b811d5`. The host19
+transaction failed; separately authorized incident recovery retained the new
+master and recovered forward. **The expired original journal remains failed and
+unchanged, not retroactively committed.** See [INCIDENT-RECOVERY.md](INCIDENT-RECOVERY.md).
+
+This candidate retries only PID-file publication ENOENT, empty publication,
+metadata/inode transition and incoherent PID pairs within the **existing phase
+deadline**. Malformed/non-ASCII/oversized/nonregular/untrusted PID files and
+incorrect process lineage remain hard errors. No acquisition sends USR2.
+
+Before WINCH, rollback proves the **exact original worker PID/start set**, live
+roles and inherited listeners, then skips old HUP and gracefully quits the new
+master. After possible WINCH it must wait for **every old worker to disappear
+naturally** before HUP. A partially drained long client is not permission to
+spawn extra workers, reset the deadline, kill clients, or claim rollback success.
+An ambiguous HUP intent is not resent. Both forward and recovery exceptions are
+retained by exception chaining.
+
+**Nchan is explicitly unsupported for production re-exec.** Configuration and
+loaded/static module checks reject it before candidate installation or signals.
+The full-module isolated test deliberately exercises primitives below this gate;
+a passing fully drained experiment does **not** prove all-phase rollback safety,
+Nchan message continuity, or authorize removal of the gate. No forward-only mode
+is implemented. Supporting partial-drain recovery or a constrained forward-only
+mode requires a separate design, full-module tests and independent review.
+
+The C module, nginx binary, package and reader bytes are unchanged; no rebuild.
+Host20 production configuration, credentials and signals are untouched. Draft
+source/CI and isolated collision evidence are not rollout approval.
+
+## Historical PR45 preparation notes (not current approval)
+
+The following records the earlier candidate's gates, not current deployment
+status. Earlier review/harness hashes must not authorize this changed installer.
+
+### Earlier blocking gates
 
 1. The provenance delta at `0f1895a` passed independent review and exact local
    forward/rollback execution (both retained the full 131072-byte slow body and
@@ -81,11 +114,12 @@ second `load_module` or overwrite an already mapped module.
 - Old workers drain naturally. Only then does write-ahead `commit-intent`
   precede old QUIT. New MainPID adoption and service/public-path health are
   checked. A post-commit failure must not signal a departed old PID.
-- `rollback`: restore exact loadconf bytes/uid/gid/mode/mtime, syntax-check,
-  old HUP and old worker readiness **before** new QUIT. While the new master
-  exists, old HUP restarts its workers without rereading configuration. A durable
-  `new-quit-intent` resume verifies old readiness without sending old HUP again. No TERM/KILL or broad
-  process matching exists in the transaction. Drain timeout retains processes.
+- `rollback`: restore exact loadconf bytes/uid/gid/mode/mtime, syntax-check;
+  before WINCH prove original worker identities/readiness without HUP; after
+  possible WINCH wait for all old workers to drain before one HUP. Only proven
+  old readiness precedes new QUIT. Durable HUP/QUIT intents are reconciled
+  without repeating HUP. No TERM/KILL or broad process matching exists in the
+  transaction. Drain timeout retains processes and an incomplete journal.
 - `reconcile`: only reconciles a persisted commit-intent/new identity; it does
   not guess whether to signal an old generation. Other interrupted phases use
   conservative rollback. An ambiguous USR2 intent without a published verified
