@@ -217,13 +217,14 @@ export function renderTelemetry() {
           || !telemetryRecent(snapshot.collected_at, now) || !telemetryRecent(telemetryData.generated_at, now, 5, 30) ? 'stale' : 'live';
       cell.dataset.freshness = freshness;
       cell.dataset.syncState = freshness === 'live' ? project.state : 'unknown';
-      cell.querySelector('[data-sync-state]').textContent = freshness === 'live'
+      const state = cell.querySelector('[data-sync-state]');
+      state.hidden = freshness === 'stale' || freshness === 'offline';
+      state.textContent = state.hidden ? '' : freshness === 'live'
         ? telemetryStateLabel(project) : dictionary[`telemetryFreshness_${freshness}`];
       const size = cell.querySelector('[data-disk-usage]');
       size.textContent = telemetryBytes(telemetryMeasuredSize(project));
       size.title = dictionary.telemetryStoredSize
-        + (project?.size_measured_at != null && now - project.size_measured_at > 86400 ? ` · ${dictionary.telemetrySizeOld}` : '')
-        + (project && freshness !== 'live' ? ` · ${dictionary.telemetryFreshness_stale}` : '');
+        + (project?.size_measured_at != null && now - project.size_measured_at > 86400 ? ` · ${dictionary.telemetrySizeOld}` : '');
       for (const direction of ['rx', 'tx']) {
         const rate = cell.querySelector(`[data-sync-${direction}]`);
         const value = freshness === 'live' && snapshot.interval_seconds === 1 && telemetryRecent(project?.rates_observed_at, now, 3)

@@ -42,6 +42,77 @@ async function openFixture(page, data = payload()) {
   await expect(page.locator('body')).toHaveClass('app-ready');
 }
 
+for (const language of ['en', 'ko']) {
+  test(`unavailable snapshot has no state badge or fabricated measurements in ${language}`, async ({ page }) => {
+    const data = payload();
+    data.mirrors.mirror1 = { available: false, snapshot: null };
+    await page.clock.install({ time: new Date(NOW * 1000) });
+    await page.clock.pauseAt(new Date(NOW * 1000));
+    await page.route(ENDPOINT, route => route.fulfill({ json: data }));
+    await page.goto(`/?lang=${language}`);
+    const reading = cell(page);
+    await expect(reading).toHaveAttribute('data-freshness', 'offline');
+    await expect(reading.locator('[data-sync-state]')).toBeHidden({ timeout: 500 });
+    await expect(reading.locator('[data-sync-state]')).toHaveText('');
+    await expect(reading.locator('[data-disk-usage], [data-sync-rx], [data-sync-tx]')).toHaveText(['—', '—', '—']);
+    await expect(cell(page, 'archlinux', 'mirror2').locator('[data-sync-state]')).toHaveText(language === 'ko' ? '완료' : 'Completed');
+    await expect(page.locator('body')).not.toContainText(/Stale|오래된 정보/);
+    await expect(page.locator('[title*="Stale"], [title*="오래된 정보"]')).toHaveCount(0);
+    data.mirrors.mirror1 = payload().mirrors.mirror1;
+    await page.clock.runFor(1000);
+    await expect(reading).toHaveAttribute('data-freshness', 'live');
+    await expect(reading.locator('[data-sync-state]')).toBeVisible();
+    await expect(reading.locator('[data-sync-state]')).toHaveText(language === 'ko' ? '완료' : 'Completed');
+    await expect(reading.locator('[data-sync-rx], [data-sync-tx]')).toHaveText(['—', '—']);
+  });
+
+  test(`expired snapshot hides its badge and stale titles, then restores fresh states in ${language}`, async ({ page }) => {
+    const data = payload();
+    const project = data.mirrors.mirror1.snapshot.projects.archlinux;
+    Object.assign(project, { sync_rx_bps: 2048, sync_tx_bps: 0, rates_observed_at: NOW });
+    await page.clock.install({ time: new Date(NOW * 1000) });
+    await page.clock.pauseAt(new Date(NOW * 1000));
+    await page.route(ENDPOINT, route => route.fulfill({ json: data }));
+    await page.goto(`/?lang=${language}`);
+    const reading = cell(page);
+    const badge = reading.locator('[data-sync-state]');
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveText(language === 'ko' ? '완료' : 'Completed');
+    await expect(reading.locator('[data-sync-rx]')).toHaveText('2 KiB/s');
+    await expect(reading.locator('[data-sync-tx]')).toHaveText('0 B/s');
+    await page.clock.runFor(6000);
+    await expect(reading).toHaveAttribute('data-freshness', 'stale');
+    await expect(badge).toBeHidden({ timeout: 500 });
+    await expect(badge).toHaveText('');
+    await expect(reading).toHaveAttribute('data-sync-state', 'unknown');
+    await expect(reading.locator('[data-sync-rx]')).toHaveText('—');
+    await expect(reading.locator('[data-sync-tx]')).toHaveText('—');
+    await expect(reading.locator('[data-disk-usage]')).toHaveText('1 GiB');
+    await expect(page.locator('body')).not.toContainText(/Stale|오래된 정보/);
+    await expect(page.locator('[title*="Stale"], [title*="오래된 정보"]')).toHaveCount(0);
+    // Locale rerenders must not resurrect the hidden badge or its tooltip.
+    await page.locator('#language-toggle').click();
+    await expect(badge).toBeHidden();
+    await expect(page.locator('[title*="Stale"], [title*="오래된 정보"]')).toHaveCount(0);
+    await page.locator('#language-toggle').click();
+    for (const [index, state] of ['syncing', 'failed', 'completed'].entries()) {
+      const at = NOW + 7 + index;
+      data.generated_at = at;
+      for (const mirror of Object.values(data.mirrors)) mirror.snapshot.collected_at = at;
+      project.state = state;
+      project.repositories[0].state = state;
+      project.rates_observed_at = at;
+      await page.clock.runFor(1000);
+      await expect(reading).toHaveAttribute('data-freshness', 'live');
+      await expect(badge).toBeVisible();
+      const labels = language === 'ko' ? ['동기화 중', '실패', '완료'] : ['Syncing', 'Failed', 'Completed'];
+      await expect(badge).toHaveText(labels[index]);
+      await expect(reading.locator('[data-sync-rx]')).toHaveText('2 KiB/s');
+      await expect(reading.locator('[data-sync-tx]')).toHaveText('0 B/s');
+    }
+  });
+}
+
 for (const [refresh, interval] of [[1, 1], [15, 15], [1, 15], [15, 1]]) {
   test(`accepts ${refresh}/${interval} second metadata without relaxing freshness`, async ({ page }) => {
     const data = payload();
@@ -108,7 +179,7 @@ test('exact freshness boundaries clear rates during a stalled poll without losin
   await page.clock.runFor(1000);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
   await expect(cell(page).locator('[data-disk-usage]')).toHaveText('1 GiB');
-  await expect(cell(page).locator('[data-disk-usage]')).toHaveAttribute('title', 'Total project stored data · Stale');
+  await expect(cell(page).locator('[data-disk-usage]')).toHaveAttribute('title', 'Total project stored data');
   expect(requests).toBe(2);
 });
 
@@ -351,7 +422,7 @@ for (const [reason, change] of [
     const data = payload(); change(data);
     await openFixture(page, data);
     await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
-    await expect(cell(page).locator('[data-sync-state]')).toHaveText('Stale');
+    await expect(cell(page).locator('[data-sync-state]')).toBeHidden();
     await expect(cell(page).locator('[data-disk-usage]')).toHaveText('1 GiB');
   });
 }
@@ -372,7 +443,7 @@ test('polls every one second, retains old measurements on failure and recovers w
   fail = true;
   await page.clock.fastForward(1001);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'stale');
-  await expect(cell(page).locator('[data-sync-state]')).toHaveText('Stale');
+  await expect(cell(page).locator('[data-sync-state]')).toBeHidden();
   await expect(cell(page).locator('[data-disk-usage]')).toHaveText('1 GiB');
   expect(requests).toBe(2);
   await expect(browse).toBeFocused();
@@ -422,7 +493,7 @@ test('a stalled request times out without overlapping and leaves unavailable rat
   expect(requests).toBe(1);
   await page.clock.fastForward(2);
   await expect(cell(page)).toHaveAttribute('data-freshness', 'offline');
-  await expect(cell(page).locator('[data-sync-state]')).toHaveText('Unavailable');
+  await expect(cell(page).locator('[data-sync-state]')).toBeHidden();
   await page.clock.runFor(1000);
   await expect.poll(() => requests).toBe(2);
 });
@@ -434,7 +505,7 @@ test('completed Gentoo with valid parent success and an unknown child is rejecte
   });
   await openFixture(page, data);
   await expect(cell(page, 'gentoo')).toHaveAttribute('data-freshness', 'offline');
-  await expect(cell(page, 'gentoo').locator('[data-sync-state]')).toHaveText('Unavailable');
+  await expect(cell(page, 'gentoo').locator('[data-sync-state]')).toBeHidden();
   await expect(cell(page, 'gentoo', 'mirror2')).toHaveAttribute('data-freshness', 'live');
   await expect(cell(page, 'gentoo', 'mirror2').locator('[data-sync-state]')).toHaveText('Completed');
 });
@@ -460,7 +531,7 @@ for (const [states, expected, incorrect] of [
     data.mirrors.mirror2.snapshot.projects.artix.size_bytes = 4294967296;
     await page.clock.fastForward(1001);
     await expect(reading).toHaveAttribute('data-freshness', 'stale');
-    await expect(reading.locator('[data-sync-state]')).toHaveText('Stale');
+    await expect(reading.locator('[data-sync-state]')).toBeHidden();
     await expect(reading.locator('[data-disk-usage]')).toHaveText('3 GiB');
     await expect(cell(page, 'artix', 'mirror2')).toHaveAttribute('data-freshness', 'live');
     await expect(cell(page, 'artix', 'mirror2').locator('[data-disk-usage]')).toHaveText('4 GiB');
@@ -480,7 +551,7 @@ for (const scope of ['project', 'repository']) {
       Object.assign(scope === 'project' ? project : project.repositories[1], overrides);
       await openFixture(page, data);
       await expect(cell(page, 'gentoo')).toHaveAttribute('data-freshness', 'offline');
-      await expect(cell(page, 'gentoo').locator('[data-sync-state]')).toHaveText('Unavailable');
+      await expect(cell(page, 'gentoo').locator('[data-sync-state]')).toBeHidden();
       await expect(cell(page, 'gentoo', 'mirror2')).toHaveAttribute('data-freshness', 'live');
       await expect(cell(page, 'gentoo', 'mirror2').locator('[data-sync-state]')).toHaveText('Completed');
     });
@@ -505,7 +576,7 @@ for (const [name, corrupt] of [
     corrupt(data);
     await openFixture(page, data);
     await expect(cell(page)).toHaveAttribute('data-freshness', 'offline');
-    await expect(cell(page).locator('[data-sync-state]')).toHaveText('Unavailable');
+    await expect(cell(page).locator('[data-sync-state]')).toBeHidden();
     await expect(cell(page).locator('[data-disk-usage]')).toHaveText('—');
     await expect(cell(page, 'archlinux', 'mirror2').locator('[data-sync-state]')).toHaveText('Completed');
     await expect(page.locator('[data-project] img')).toHaveCount(0);
