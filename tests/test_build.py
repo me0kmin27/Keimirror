@@ -1,6 +1,7 @@
 """Deterministic static output and cache invalidation contracts."""
 import importlib.util
 from pathlib import Path
+import re
 import tempfile
 import unittest
 
@@ -34,15 +35,26 @@ class BuildTests(unittest.TestCase):
             (root / 'templates/index.html').write_text('<script src="assets/js/app.js"></script>')
             (root / 'assets/css/styles.css').write_text('body {}')
             (root / 'assets/js/i18n.js').write_text('export const translations = {};')
-            (root / 'assets/js/telemetry.js').write_text("import { translations } from './i18n.js';\nexport function startTelemetry() { return translations; }")
-            (root / 'assets/js/app.js').write_text("import { translations } from './i18n.js';\nimport { startTelemetry } from './telemetry.js';\nstartTelemetry();")
+            (root / 'assets/js/directory.js').write_text("import { translations } from './i18n.js';\nexport function enhanceDirectory() { return translations; }")
+            (root / 'assets/js/app.js').write_text("import { translations } from './i18n.js';\nimport { enhanceDirectory } from './directory.js';\nenhanceDirectory();")
             first = build.build(root)
             runtime = build.bundle(root)
             self.assertNotIn('import ', runtime, 'The served bundle must not fetch modules at runtime')
             self.assertEqual(runtime.count('const translations'), 1)
-            self.assertIn('function startTelemetry', runtime)
-            (root / 'assets/js/telemetry.js').write_text("import { translations } from './i18n.js';\nexport function startTelemetry() { return translations.en; }")
-            self.assertNotEqual(first, build.build(root), 'Telemetry edits must invalidate the runtime URL')
+            self.assertIn('function enhanceDirectory', runtime)
+            (root / 'assets/js/directory.js').write_text("import { translations } from './i18n.js';\nexport function enhanceDirectory() { return translations.en; }")
+            self.assertNotEqual(first, build.build(root), 'Dependency edits must invalidate the runtime URL')
+
+    def test_delivered_frontend_has_no_retired_telemetry(self):
+        self.assertFalse((build.ROOT / 'assets/js/telemetry.js').exists())
+        self.assertNotIn('telemetry', build.bundle().lower())
+        self.assertNotIn('/status/mirrors.json', build.bundle())
+        html = build.build()
+        for marker in ['data-mirror-cell', 'data-sync-state', 'data-disk-usage', 'data-sync-rx', 'data-sync-tx']:
+            self.assertNotIn(marker, html)
+        self.assertEqual(html.count('class="project-row"'), 10)
+        self.assertEqual(html.count('class="project-links"'), 10)
+        self.assertEqual(len(re.findall(r'<a href="https://mirror2?\.keiminem\.com/[a-z]+/"', html)), 20)
 
 
 if __name__ == '__main__':

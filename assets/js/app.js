@@ -1,5 +1,4 @@
 import { translations } from './i18n.js';
-import { startTelemetry, renderTelemetry } from './telemetry.js';
 
 const root = document.documentElement;
 const themes = ['auto', 'light', 'dark'];
@@ -59,7 +58,6 @@ function componentError(host) {
     bindControls();
     applyTheme(root.dataset.theme || 'auto');
     applyLanguage(root.lang);
-    startTelemetry();
   });
   fallback.append(message, retry);
   host.replaceChildren(fallback);
@@ -133,7 +131,6 @@ function applyLanguage(language) {
   renderCopyStatus();
   renderMirrorLabels();
   renderVisitorIp();
-  renderTelemetry();
   renderThemeControl();
   if (languageToggle) {
     languageToggle.textContent = language === 'en' ? '한국어' : 'English';
@@ -151,7 +148,6 @@ function hideMirrorList() {
   const placeholder = document.querySelector('[data-mirror-placeholder]');
   const mirrorList = document.querySelector('[data-mirror-list]');
   const mirrorFrame = document.querySelector('[data-mirror-frame]');
-  const hero = mirrorList?.closest('.hero');
 
   if (placeholder) placeholder.hidden = false;
   if (mirrorList) {
@@ -159,7 +155,6 @@ function hideMirrorList() {
     delete mirrorList.dataset.activeMirror;
   }
   if (mirrorFrame) mirrorFrame.removeAttribute('src');
-  hero?.classList.remove('is-showing-mirror-list');
   if (mirrorOpener?.isConnected) mirrorOpener.focus();
 
   document.querySelectorAll('[data-mirror-trigger]').forEach((trigger) => {
@@ -192,11 +187,8 @@ function showMirrorList(mirrorId, opener) {
 
   if (!mirrorList || !mirrorFrame || !mirrorOpen) return;
 
-  const hero = mirrorList.closest('.hero');
-
   if (placeholder) placeholder.hidden = true;
   mirrorList.hidden = false;
-  hero?.classList.add('is-showing-mirror-list');
   mirrorList.dataset.activeMirror = mirrorId;
   if (opener) mirrorOpener = opener;
   clearTimeout(mirrorTimeout);
@@ -484,7 +476,6 @@ async function initialize() {
     bindControls();
     applyTheme(readPreference('keimirror-theme', 'auto'));
     applyLanguage(detectInitialLanguage());
-    startTelemetry();
   } finally {
     markAppReady();
   }

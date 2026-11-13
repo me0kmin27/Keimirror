@@ -1,0 +1,20 @@
+<div class="mirror-access-section">
+  <div data-component="components/cards/mirror-access.html"></div>
+  <aside class="hero-mirror-panel" aria-label="Directory preview" data-i18n-aria-label="mirrorListEyebrow">
+    <p class="hero-mirror-placeholder" data-mirror-placeholder data-i18n="mirrorPreviewHint">Use a project link above, or preview a mirror’s root directory.</p>
+    <div class="hero-mirror-list" id="mirror-preview" data-mirror-list hidden>
+      <div class="hero-mirror-list-header">
+        <div>
+          <p class="eyebrow" data-i18n="mirrorListEyebrow">Directory preview</p>
+          <h2 id="hero-mirror-title" data-mirror-title data-i18n="mirrorListTitle">Select a mirror</h2>
+        </div>
+        <div class="preview-actions">
+          <a class="button" data-mirror-open href="https://mirror.keiminem.com/" target="_blank" rel="noopener noreferrer" data-i18n="mirrorListOpenNew">Open in new tab</a>
+          <button class="button" type="button" data-mirror-close data-i18n="mirrorClose" aria-controls="mirror-preview">Close preview</button>
+        </div>
+      </div>
+      <p class="preview-note" data-i18n="mirrorPreviewNote">If the directory does not load here, open it in a new tab.</p>
+      <iframe class="hero-mirror-frame" data-mirror-frame title="Mirror directory list" loading="lazy" referrerpolicy="no-referrer"></iframe>
+    </div>
+  </aside>
+</div>
