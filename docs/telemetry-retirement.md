@@ -1,7 +1,10 @@
 # Custom telemetry retirement — operator checklist
 
 Source retirement date: **2026-11-13**. This replaces the old installation
-runbooks. **No live cleanup or deployment is established by this document.**
+runbooks. This checklist is not itself an execution receipt.
+**No live cleanup or deployment is established by this document.** The completed
+production removal and its verification boundaries are recorded in the
+[2026-11-13 removal report](telemetry-removal-20261113.md).
 Every checkbox below requires a new, host-specific receipt from the operator;
 source tests, old manifests and a static-site upload cannot satisfy it.
 
