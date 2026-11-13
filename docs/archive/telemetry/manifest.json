@@ -1,0 +1,75 @@
+{
+  "base_commit": "9c1d08a6c5fee2925fcfbbd720321df7df9ac127",
+  "deployment_authorized": false,
+  "purpose": "Historical evidence only; not an installation or current host manifest.",
+  "files": [
+    {
+      "original_path": "docs/operations-history-2026-10.md",
+      "sha256": "1e55d3f1306c5ab6781b49139098615ad8a0983653247fd6b0d2c36d59ac63a1"
+    },
+    {
+      "original_path": "docs/private-diagnostics.md",
+      "sha256": "a094972ffba68505da96a2a388aaaada66d18a594e47057fe360b9fa7863b7b7"
+    },
+    {
+      "original_path": "docs/rpc-exclusion-candidate.md",
+      "sha256": "1ba2c3e521deace49be01da97fa7f327f35a2a5e63c5ebd4738db05ceb9d8b37"
+    },
+    {
+      "original_path": "docs/telemetry-clock-recovery-2026-11-03.md",
+      "sha256": "4f06644cee8abee44219f83e01ec43e73e36e21e3696ca5d6879884db7bd03a5"
+    },
+    {
+      "original_path": "docs/telemetry-contract.md",
+      "sha256": "bf40b7f532374a05bc8c260853d7881af3663498c6bcbea5576e791f5de1990b"
+    },
+    {
+      "original_path": "docs/telemetry-operations.md",
+      "sha256": "9bf6aa7d5a3990994e7a62b3ecd5b90f5006ecda5b10b60c3a78b39cb33a15cc"
+    },
+    {
+      "original_path": "ops/telemetry/http-reexec/INCIDENT-RECOVERY.md",
+      "sha256": "752a0604332e3e7d6714ad0183267547b3d7e8ce385c573ffe5851f35b778fb6"
+    },
+    {
+      "original_path": "ops/telemetry/http-reexec/PR46-P2-EVIDENCE.md",
+      "sha256": "70b207f626632372970616de9f4dd24ac13a3a4538711afa93645844a18d2a29"
+    },
+    {
+      "original_path": "ops/telemetry/http-reexec/README.md",
+      "sha256": "979e1c58e8ff6148fc3d6179f5d1868a78ad1863f0545c2340eac4f03ca15f92"
+    },
+    {
+      "original_path": "ops/telemetry/http-reexec/ROOTSTAGING.md",
+      "sha256": "557206583d04971f368931e97eb8ec5e2844f49d8f1212e442b7b023bbd96077"
+    },
+    {
+      "original_path": "ops/telemetry/http-reexec/host-baselines.json",
+      "sha256": "23b8f68a022f5378d0a6c6be02b1500390182d34509b75e93bb2ce737d7efd71"
+    },
+    {
+      "original_path": "ops/telemetry/http-reexec/host-readonly-configs.json",
+      "sha256": "349f9be9512c89efbb21808a3b6cc895c0607cb9a34416a2486e8c2aadf6f539"
+    },
+    {
+      "original_path": "ops/telemetry/http-reexec/incident-runtime-evidence.json",
+      "sha256": "83a151cf6fc193302a9ba3c6fcffd0c9d2f1b1c6ea018be4739618244fec79f0"
+    },
+    {
+      "original_path": "ops/telemetry/http-reexec/review-manifest.json",
+      "sha256": "900f2d359d9c5e5241b927f9f376a53b8ec5bdd1a56056ad39eef54fa7e265bc"
+    },
+    {
+      "original_path": "ops/telemetry/http-reexec/root-staging-manifest.json",
+      "sha256": "6dbe6365801b6cd37ff4467cff0ca354757e938e47db8753c23228c41ce43593"
+    },
+    {
+      "original_path": "ops/telemetry/nginx-live/README.md",
+      "sha256": "9b0f98b80d8493d5a3cc1dcb156710528935da3525f1470627141b39b8b2a84a"
+    },
+    {
+      "original_path": "telemetry/HOLDER_RECOVERY.md",
+      "sha256": "f34d3ca9526d9186d1731110fa1b8140b32654480585730a1016ccf23419d676"
+    }
+  ]
+}

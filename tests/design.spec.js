@@ -134,7 +134,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 667 }
           panel: rect(panel), frame: rect(panel.querySelector('iframe')),
           clientHeight: panel.clientHeight, scrollHeight: panel.scrollHeight,
           pageWidth: document.documentElement.scrollWidth,
-          nextSection: rect(document.querySelector('#projects')),
+          nextSection: rect(document.querySelector('.layout')),
           controls: [...panel.querySelectorAll('a, button')].map(rect),
         };
       });
